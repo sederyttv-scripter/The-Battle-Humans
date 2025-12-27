@@ -1,11 +1,11 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.1.9'; // Stage 2 Difficulty Rebalance
+export const GAME_VERSION = '1.2.0'; // PWA Support & Balance Patch
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
-export const INITIAL_MONEY = 50; // Reduced starting budget
+export const INITIAL_MONEY = 50; 
 export const MONEY_TICK_INTERVAL = 100;
 export const GAME_TICK_INTERVAL = 33;
 
@@ -36,7 +36,7 @@ export const CANNON_DAMAGE_PER_LEVEL = 50;
 export const CANNON_MAX_LEVEL = 10;
 export const CANNON_UPGRADE_BASE_COST = 500;
 
-export const REWARD_PER_STAGE = 225;
+export const REWARD_PER_STAGE = 225; // Increased by 125
 export const FIRST_CLEAR_MULTIPLIER = 3.25;
 
 export const PLAYER_UNITS: UnitType[] = [

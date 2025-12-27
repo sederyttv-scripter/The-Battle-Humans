@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { GameState, ActiveUnit, Side, UnitType, Screen, AltForm } from './types';
 import { 
@@ -129,7 +128,7 @@ const BattlerVisual: React.FC<{
   typeId?: string,
   isHeavy?: boolean, 
   isAttacking?: boolean, 
-  hasHat?: boolean,
+  hasHat?: boolean, 
   size?: 'sm' | 'md' | 'lg',
   lastAbilityTime?: number,
   isAltForm?: boolean,
@@ -398,6 +397,39 @@ export default function App() {
   const [lastWinReward, setLastWinReward] = useState<{coins: number, isFirst: boolean} | null>(null);
   const [unitLastSpawnTimes, setUnitLastSpawnTimes] = useState<Record<string, number>>({});
   const [showSandboxPanel, setShowSandboxPanel] = useState(false);
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        setDeferredPrompt(null);
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+    }
+  };
   
   const [gameState, setGameState] = useState<GameState>(() => {
     // Check version - if mismatch, wipe data immediately
@@ -723,7 +755,7 @@ export default function App() {
             }
           } else if (prev.currentStage === 5) {
             const chance = Math.random();
-            // NERFED: Chance 0.3 -> 0.12, Cooldown 1500 -> 3500
+            // NERFED STAGE 5: Chance 0.3 -> 0.12, Cooldown 1500 -> 3500
             if (chance < 0.12 && enemyCooldownsRef.current['e_rage_battler'] === 0 && enemyMoneyRef.current >= 100) {
               unitToSpawn = 'e_rage_battler'; enemyCooldownsRef.current['e_rage_battler'] = 3500;
             }
@@ -1299,6 +1331,17 @@ export default function App() {
                     </div>
                 </div>
             </div>
+
+            {/* Install Prompt (Only visible when browser allows installation) */}
+            {deferredPrompt && (
+              <button 
+                  onClick={handleInstallApp}
+                  className="absolute top-4 left-4 z-50 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl font-bold shadow-lg animate-pulse flex items-center gap-2 border border-green-400"
+              >
+                  <i className="fab fa-android text-xl"></i>
+                  <span>INSTALL APP</span>
+              </button>
+            )}
 
             {/* Floating Stats */}
             <div className="absolute top-6 right-8 flex items-center gap-3 bg-slate-900/80 backdrop-blur border border-slate-700 py-2 px-4 rounded-xl shadow-lg animate-in slide-in-from-right fade-in duration-1000">
