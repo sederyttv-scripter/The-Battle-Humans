@@ -944,7 +944,8 @@ export default function App() {
              const isFirst = !prev.unlockedStages.includes(prev.currentStage + 1);
              const reward = Math.floor(prev.currentStage * REWARD_PER_STAGE * (isFirst ? FIRST_CLEAR_MULTIPLIER : 1));
              newCoins += reward; setLastWinReward({ coins: reward, isFirst });
-             if (!stages.includes(prev.currentStage + 1) && prev.currentStage + 1 <= 8) stages.push(prev.currentStage + 1);
+             // Fix: Remove the 8 cap to allow unlocking "9" (which is just beating 8)
+             if (!stages.includes(prev.currentStage + 1)) stages.push(prev.currentStage + 1);
           } else {
              setLastWinReward({ coins: 0, isFirst: false });
           }

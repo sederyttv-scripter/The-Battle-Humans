@@ -1,8 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Initialize AI client using the provided API key strictly from environment
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize AI client lazily to avoid top-level failures
+let ai: GoogleGenAI | null = null;
 
 // Local fallback commentary for when the API is rate-limited or unavailable
 const FALLBACK_COMMENTARY = [
@@ -40,6 +40,15 @@ export const generateBattleCommentary = async (event: string): Promise<string> =
 
   // API Key is assumed to be available as per guidelines
   try {
+    if (!ai) {
+        // Double check if API key exists before initializing to prevent crashes
+        if (!process.env.API_KEY) {
+            console.warn("API_KEY is missing. Using fallback commentary.");
+            return FALLBACK_COMMENTARY[Math.floor(Math.random() * FALLBACK_COMMENTARY.length)];
+        }
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+
     lastCallTime = now;
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
