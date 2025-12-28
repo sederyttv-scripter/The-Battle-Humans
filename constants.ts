@@ -1,7 +1,7 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.2.0'; // PWA Support & Balance Patch
+export const GAME_VERSION = '1.6.0'; // Stage 8: Bullet Hell
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
@@ -38,6 +38,17 @@ export const CANNON_UPGRADE_BASE_COST = 500;
 
 export const REWARD_PER_STAGE = 225; // Increased by 125
 export const FIRST_CLEAR_MULTIPLIER = 3.25;
+
+export const STAGE_CONFIG = [
+  { id: 1, name: "Intern Orientation", subtitle: "The First Day", icon: "fas fa-id-card", color: "from-blue-600 to-blue-900" },
+  { id: 2, name: "Coffee Run", subtitle: "Caffeine Emergency", icon: "fas fa-mug-hot", color: "from-amber-600 to-amber-900" },
+  { id: 3, name: "Quarterly Review", subtitle: "Performance Metrics", icon: "fas fa-chart-line", color: "from-emerald-600 to-emerald-900" },
+  { id: 4, name: "Severance Package", subtitle: "Aggressive Negotiations", icon: "fas fa-briefcase", color: "from-red-600 to-red-900" },
+  { id: 5, name: "The Rage", subtitle: "Burnout Critical", icon: "fas fa-fire", color: "from-orange-600 to-orange-900" },
+  { id: 6, name: "Meat Shield", subtitle: "Defensive Perimeter", icon: "fas fa-shield-virus", color: "from-slate-600 to-slate-900" },
+  { id: 7, name: "Baller's Rise", subtitle: "Executive Takeover", icon: "fas fa-basketball-ball", color: "from-purple-600 to-purple-900" },
+  { id: 8, name: "Bullet Hell", subtitle: "Infinite Barrage", icon: "fas fa-meteor", color: "from-red-900 to-slate-950" },
+];
 
 export const PLAYER_UNITS: UnitType[] = [
   {
@@ -197,21 +208,7 @@ export const ENEMY_UNITS: UnitType[] = [
     attackCooldown: 1500,
     spawnCooldown: 6000,
     unlockLevel: 0,
-    description: 'Elite combatant capable of devastating double strikes.'
-  },
-  {
-    id: 'e_builder',
-    name: 'Builder Enemy',
-    icon: 'custom-builder',
-    cost: 120,
-    hp: 120,
-    damage: 3,
-    speed: 2,
-    range: 60,
-    attackCooldown: 3000,
-    spawnCooldown: 18000,
-    unlockLevel: 0,
-    description: 'A unit that constructs stationary walls every 30s to halt your progress.'
+    description: 'A heavy hitter with a 1-2 punch combo.'
   },
   {
     id: 'e_pistoler',
@@ -225,34 +222,62 @@ export const ENEMY_UNITS: UnitType[] = [
     attackCooldown: 1250,
     spawnCooldown: 4000,
     unlockLevel: 0,
-    description: 'Corporate shooter with a quick trigger finger. Fires high-velocity rounds from long distance.'
+    description: 'Provides ranged support for the enemy lines.'
+  },
+  {
+    id: 'e_builder',
+    name: 'Builder',
+    icon: 'fas fa-hammer',
+    cost: 300,
+    hp: 400,
+    damage: 10,
+    speed: 2,
+    range: 50,
+    attackCooldown: 2000,
+    spawnCooldown: 15000,
+    unlockLevel: 0,
+    description: 'A construction worker who builds defensive walls.'
+  },
+  {
+    id: 'e_wall',
+    name: 'Wall',
+    icon: 'fas fa-square',
+    cost: 10,
+    hp: 335,
+    damage: 0,
+    speed: 0,
+    range: 0,
+    attackCooldown: 1000,
+    spawnCooldown: 1000,
+    unlockLevel: 0,
+    description: 'A stationary wall built by Builders.'
   },
   {
     id: 'e_rage_battler',
     name: 'Rage Battler',
-    icon: 'custom-battler-rage',
-    cost: 100,
-    hp: 275,
-    damage: 23,
-    speed: 6,
-    range: 45,
+    icon: 'fas fa-angry',
+    cost: 150,
+    hp: 350,
+    damage: 55,
+    speed: 7,
+    range: 40,
     attackCooldown: 500,
-    spawnCooldown: 1500,
+    spawnCooldown: 5000,
     unlockLevel: 0,
-    description: 'An extremely stressed employee. Below 25% health, his rage fuels even faster strikes.'
+    description: 'A furious combatant who attacks rapidly when provoked.'
   },
   {
-    id: 'e_wall',
-    name: 'The Wall',
-    icon: 'fas fa-square-full',
-    cost: 0,
-    hp: 300,
-    damage: 0,
-    speed: 0,
-    range: 0,
-    attackCooldown: 999999,
-    spawnCooldown: 0,
+    id: 'e_baller',
+    name: 'Baller Battler',
+    icon: 'fas fa-basketball-ball',
+    cost: 250,
+    hp: 230,
+    damage: 40,
+    speed: 5.5,
+    range: 400,
+    attackCooldown: 3500,
+    spawnCooldown: 8000,
     unlockLevel: 0,
-    description: 'A stationary defensive barrier.'
+    description: 'A stylish unit with extra range that knocks enemies back.'
   }
 ];
