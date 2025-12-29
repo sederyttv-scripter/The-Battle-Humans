@@ -1,7 +1,7 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.6.0'; // Stage 8: Bullet Hell
+export const GAME_VERSION = '1.6.1'; // Balance Patch: Speed Cap & Nerfs
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
@@ -50,15 +50,18 @@ export const STAGE_CONFIG = [
   { id: 8, name: "Bullet Hell", subtitle: "Infinite Barrage", icon: "fas fa-meteor", color: "from-red-900 to-slate-950" },
 ];
 
+// NOTE: All allies (except Baby) nerfed by ~19.5% Stats.
+// NOTE: All units (except Builder Enemy) capped at speed 1.9 to be slower than Builder (speed 2).
+
 export const PLAYER_UNITS: UnitType[] = [
   {
     id: 'baby',
     name: 'Baby Intern',
     icon: 'fas fa-baby',
     cost: 50,
-    hp: 150,
-    damage: 15,
-    speed: 4,
+    hp: 150, // Exception: No Nerf
+    damage: 15, // Exception: No Nerf
+    speed: 1.9, // Capped (was 4)
     range: 40,
     attackCooldown: 1000,
     spawnCooldown: 2000,
@@ -68,7 +71,7 @@ export const PLAYER_UNITS: UnitType[] = [
       name: 'Hairy Graduate',
       hp: 150,
       damage: 15,
-      speed: 4,
+      speed: 1.9, // Capped
       range: 40,
       attackCooldown: 1000,
       cost: 50,
@@ -80,9 +83,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Human Tank',
     icon: 'fas fa-user-shield',
     cost: 200,
-    hp: 1200,
-    damage: 8,
-    speed: 1.5,
+    hp: 966, // 1200 * 0.805
+    damage: 6, // 8 * 0.805
+    speed: 1.5, // Already slower than 2
     range: 35,
     attackCooldown: 1500,
     spawnCooldown: 5000,
@@ -90,8 +93,8 @@ export const PLAYER_UNITS: UnitType[] = [
     description: 'A dedicated damage sponge. Extremely low offensive capability but high survivability.',
     altForm: {
       name: 'Human Fortress',
-      hp: 1700,
-      damage: 8,
+      hp: 1369, // 1700 * 0.805
+      damage: 6, // 8 * 0.805
       speed: 0.8,
       range: 35,
       attackCooldown: 1500,
@@ -104,9 +107,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Sworder',
     icon: 'fas fa-khanda',
     cost: 200,
-    hp: 450,
-    damage: 30,
-    speed: 5,
+    hp: 362, // 450 * 0.805
+    damage: 24, // 30 * 0.805
+    speed: 1.9, // Capped (was 5)
     range: 55,
     attackCooldown: 1000,
     spawnCooldown: 6000,
@@ -114,9 +117,9 @@ export const PLAYER_UNITS: UnitType[] = [
     description: 'Melee specialist wielding a corporate letter opener. High attack speed and solid damage.',
     altForm: {
       name: 'Blacksteel',
-      hp: 450,
-      damage: 90,
-      speed: 5,
+      hp: 362, // 450 * 0.805
+      damage: 72, // 90 * 0.805
+      speed: 1.9, // Capped
       range: 85,
       attackCooldown: 3000,
       cost: 200,
@@ -128,9 +131,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Pistoler',
     icon: 'fas fa-gun',
     cost: 200,
-    hp: 230,
-    damage: 38,
-    speed: 5.5,
+    hp: 185, // 230 * 0.805
+    damage: 31, // 38 * 0.805
+    speed: 1.9, // Capped (was 5.5)
     range: 350,
     attackCooldown: 1250,
     spawnCooldown: 4000,
@@ -142,9 +145,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Security',
     icon: 'fas fa-shield-halved',
     cost: 550,
-    hp: 2500,
-    damage: 50,
-    speed: 2,
+    hp: 2013, // 2500 * 0.805
+    damage: 40, // 50 * 0.805
+    speed: 1.9, // Capped (was 2)
     range: 45,
     attackCooldown: 1200,
     spawnCooldown: 15000,
@@ -156,9 +159,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Lead Dev',
     icon: 'fas fa-laptop-code',
     cost: 950,
-    hp: 600,
-    damage: 250,
-    speed: 3,
+    hp: 483, // 600 * 0.805
+    damage: 201, // 250 * 0.805
+    speed: 1.9, // Capped (was 3)
     range: 400,
     attackCooldown: 2500,
     spawnCooldown: 25000,
@@ -170,9 +173,9 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'The CEO',
     icon: 'fas fa-user-tie',
     cost: 3000,
-    hp: 6500,
-    damage: 750,
-    speed: 1.2,
+    hp: 5233, // 6500 * 0.805
+    damage: 604, // 750 * 0.805
+    speed: 1.2, // Already slower
     range: 150,
     attackCooldown: 3500,
     spawnCooldown: 60000,
@@ -189,7 +192,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 80,
     hp: 170,
     damage: 18,
-    speed: 3.5,
+    speed: 1.9, // Capped (was 3.5)
     range: 40,
     attackCooldown: 1010,
     spawnCooldown: 3000,
@@ -203,7 +206,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 150,
     hp: 225,
     damage: 36,
-    speed: 2.5,
+    speed: 1.9, // Capped (was 2.5)
     range: 40,
     attackCooldown: 1500,
     spawnCooldown: 6000,
@@ -217,7 +220,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 200,
     hp: 230,
     damage: 38,
-    speed: 5.5,
+    speed: 1.9, // Capped (was 5.5)
     range: 350,
     attackCooldown: 1250,
     spawnCooldown: 4000,
@@ -231,7 +234,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 300,
     hp: 400,
     damage: 10,
-    speed: 2,
+    speed: 2, // The Speed Benchmark (Unchanged)
     range: 50,
     attackCooldown: 2000,
     spawnCooldown: 15000,
@@ -259,7 +262,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 150,
     hp: 350,
     damage: 55,
-    speed: 7,
+    speed: 1.9, // Capped (was 7)
     range: 40,
     attackCooldown: 500,
     spawnCooldown: 5000,
@@ -273,7 +276,7 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 250,
     hp: 230,
     damage: 40,
-    speed: 5.5,
+    speed: 1.9, // Capped (was 5.5)
     range: 400,
     attackCooldown: 3500,
     spawnCooldown: 8000,
