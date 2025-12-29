@@ -152,19 +152,25 @@ export const GameAssistant: React.FC<GameAssistantProps> = ({ gameState }) => {
     if (e.key === 'Enter') handleSend();
   };
 
+  const isBattle = gameState.screen === 'battle';
+
   return (
     <>
       {/* Floating Toggle Button */}
       <button 
         onClick={toggleOpen}
-        className="absolute bottom-6 right-6 z-50 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(8,145,178,0.6)] transition-all hover:scale-110 active:scale-95 border-2 border-cyan-300"
+        className={`absolute z-50 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(8,145,178,0.6)] transition-all hover:scale-110 active:scale-95 border-2 border-cyan-300 ${
+          isBattle ? 'bottom-36 md:bottom-44 right-4 md:right-6' : 'bottom-6 right-4 md:right-6'
+        }`}
       >
         <i className={`fas ${isOpen ? 'fa-times' : 'fa-robot'} text-white text-2xl`}></i>
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-24 right-6 z-50 w-80 md:w-96 h-96 bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-cyan-500/50 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+        <div className={`absolute z-50 w-80 md:w-96 h-96 bg-slate-900/95 backdrop-blur-md rounded-2xl border-2 border-cyan-500/50 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300 ${
+          isBattle ? 'bottom-52 right-4 md:right-6' : 'bottom-24 right-4 md:right-6'
+        }`}>
           {/* Header */}
           <div className="bg-cyan-900/30 p-3 border-b border-cyan-500/30 flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>

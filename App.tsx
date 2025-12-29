@@ -1346,8 +1346,8 @@ export default function App() {
       case 'battle':
         return (
             <ScreenWrapper className="bg-slate-900">
-                {/* Immersive HUD - Top */}
-                <div className="absolute top-0 left-0 right-0 z-30 p-4 pointer-events-none flex justify-between items-start">
+                {/* Immersive HUD - Top - Added top padding for mobile safe areas */}
+                <div className="absolute top-0 left-0 right-0 z-30 pt-12 px-4 pb-4 md:p-4 pointer-events-none flex justify-between items-start">
                     <div className="flex gap-4 pointer-events-auto">
                         <button onClick={exitToMenu} className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur border border-white/10 text-white flex items-center justify-center hover:bg-red-900/50 hover:border-red-500/50 transition-colors shadow-lg">
                             <i className="fas fa-pause"></i>
@@ -1391,9 +1391,9 @@ export default function App() {
                         isEnemyImmune={false} 
                     />
                     
-                    {/* Sandbox Panel Overlay */}
+                    {/* Sandbox Panel Overlay - Moved down to avoid top HUD */}
                     {gameState.sandboxMode && (
-                        <div className={`absolute top-20 right-4 z-40 bg-slate-900/90 backdrop-blur border border-yellow-500/30 p-4 rounded-xl transition-all w-64 shadow-2xl ${showSandboxPanel ? 'translate-x-0' : 'translate-x-[120%]'}`}>
+                        <div className={`absolute top-32 right-4 z-40 bg-slate-900/90 backdrop-blur border border-yellow-500/30 p-4 rounded-xl transition-all w-64 shadow-2xl ${showSandboxPanel ? 'translate-x-0' : 'translate-x-[120%]'}`}>
                             <div className="text-xs font-black text-yellow-500 uppercase tracking-widest mb-4 border-b border-yellow-500/20 pb-2 flex justify-between">
                                 <span>Sandbox Tools</span>
                                 <button onClick={() => setShowSandboxPanel(false)}><i className="fas fa-times"></i></button>
@@ -1416,7 +1416,7 @@ export default function App() {
                         </div>
                     )}
                     {gameState.sandboxMode && !showSandboxPanel && (
-                        <button onClick={() => setShowSandboxPanel(true)} className="absolute top-20 right-0 bg-yellow-600 text-black p-2 rounded-l-lg shadow-lg z-40"><i className="fas fa-tools"></i></button>
+                        <button onClick={() => setShowSandboxPanel(true)} className="absolute top-32 right-0 bg-yellow-600 text-black p-2 rounded-l-lg shadow-lg z-40"><i className="fas fa-tools"></i></button>
                     )}
                 </div>
 
