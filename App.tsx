@@ -165,6 +165,7 @@ const BattlerVisual: React.FC<{
   const now = Date.now();
   
   const isConstructing = typeId === 'e_builder' && lastAbilityTime && (now - lastAbilityTime < 1500);
+  const isSlamming = typeId === 'e_boss_shotgunner' && lastAbilityTime && (now - lastAbilityTime < 1000);
   
   if (typeId === 'e_wall') {
     return (
@@ -306,7 +307,7 @@ const BattlerVisual: React.FC<{
   }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun]);
 
   return (
-    <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' ? 'scale-125' : ''} ${isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
+    <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
       {accessories}
       {typeId !== 'e_rage_battler' && typeId !== 'e_boss_shotgunner' && (
         <>
@@ -989,8 +990,39 @@ export default function App() {
           
           // --- BOSS LOGIC START ---
           if (u.typeId === 'e_boss_shotgunner') {
+             // Phase 3 Transition Logic: Ground Slam
+             if (u.currentHp <= 3000 && !u.hasSlammed) {
+                u.hasSlammed = true;
+                u.lastAbilityTime = now; // Trigger Slam animation
+                
+                // Heal 25% of Max HP (6563) -> ~1640
+                const maxBossHp = 6563; 
+                u.currentHp = Math.min(maxBossHp, u.currentHp + (maxBossHp * 0.25));
+                
+                // Instant Kill Player Units
+                newUnits.forEach(target => {
+                    if (target.side === 'player') {
+                        target.currentHp = -99999;
+                    }
+                });
+                
+                // Summon 3 Double Punchers
+                for(let i=0; i<3; i++) {
+                     pendingUnits.push({
+                        instanceId: nextInstanceId.current++,
+                        typeId: 'e_double_puncher',
+                        side: 'enemy',
+                        x: u.x + (Math.random() * 60 - 30),
+                        currentHp: 225, // Base HP of Double Puncher
+                        lastAttackTime: 0,
+                        lastAbilityTime: 0
+                     });
+                }
+                
+                sounds.playBaseHit(); // Heavy impact sound
+             }
+
              // Transition Logic: Throw Shotgun
-             // Adjusted Threshold to 5000 (approx 75% of new HP 6563) to match buff
              if (u.currentHp < 5000 && !u.hasThrownShotgun) {
                 u.hasThrownShotgun = true;
                 // AK-47 Mode speed
@@ -1711,6 +1743,16 @@ export default function App() {
         @keyframes idle-baller { 0% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-3px) rotate(-2deg); } 50% { transform: translateY(0) rotate(0deg); } 75% { transform: translateY(-1px) rotate(2deg); } 100% { transform: translateY(0) rotate(0deg); } }
         @keyframes idle-boss { 0%, 100% { transform: scale(1.5); } 50% { transform: scale(1.55); } }
         @keyframes vibrate { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+        
+        /* Boss Slam Animation */
+        @keyframes boss-slam {
+          0% { transform: scale(1.5) translateY(0); }
+          20% { transform: scale(1.8) translateY(-40px); }
+          40% { transform: scale(1.8) translateY(-40px); }
+          50% { transform: scale(1.5) translateY(20px); } /* SLAM */
+          60% { transform: scale(1.5) translateY(15px); }
+          100% { transform: scale(1.5) translateY(0); }
+        }
 
         /* Classes */
         .animate-float { animation: float 6s ease-in-out infinite; }
@@ -1728,6 +1770,7 @@ export default function App() {
         .animate-idle-baller { animation: idle-baller 0.8s ease-in-out infinite; }
         .animate-idle-boss { animation: idle-boss 2s ease-in-out infinite; }
         .animate-vibrate { animation: vibrate 0.1s linear infinite; }
+        .animate-boss-slam { animation: boss-slam 1s ease-in-out forwards; }
 
         /* Utilities */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
