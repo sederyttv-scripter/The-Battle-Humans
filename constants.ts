@@ -1,7 +1,7 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.6.4'; // Baller Slow Down
+export const GAME_VERSION = '1.6.6'; // Boss One-Shot Buff
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
@@ -48,6 +48,8 @@ export const STAGE_CONFIG = [
   { id: 6, name: "Meat Shield", subtitle: "Defensive Perimeter", icon: "fas fa-shield-virus", color: "from-slate-600 to-slate-900" },
   { id: 7, name: "Baller's Rise", subtitle: "Executive Takeover", icon: "fas fa-basketball-ball", color: "from-purple-600 to-purple-900" },
   { id: 8, name: "Bullet Hell", subtitle: "Infinite Barrage", icon: "fas fa-meteor", color: "from-red-900 to-slate-950" },
+  { id: 9, name: "Nine of a Kinds", subtitle: "Total Chaos", icon: "fas fa-dice-d20", color: "from-fuchsia-600 to-fuchsia-900" },
+  { id: 10, name: "No Mercy!", subtitle: "The Shotgunner", icon: "fas fa-skull-crossbones", color: "from-slate-800 to-black" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -279,5 +281,19 @@ export const ENEMY_UNITS: UnitType[] = [
     spawnCooldown: 8000,
     unlockLevel: 0,
     description: 'A stylish unit with extra range that knocks enemies back.'
+  },
+  {
+    id: 'e_boss_shotgunner',
+    name: 'Shotgunner (BOSS)',
+    icon: 'fas fa-skull',
+    cost: 9999, // Boss unit, not purchasable normally
+    hp: 6563, // Buffed 25% from 5250
+    damage: 210, // Buffed to one-shot Lvl 3 Baby Intern (150 * 1.4 = 210)
+    speed: 0.85,
+    range: 150,
+    attackCooldown: 2500,
+    spawnCooldown: 999999,
+    unlockLevel: 0,
+    description: 'The Exterminator. Wields a shotgun that shreds groups. Switches to an AK-47 when damaged.'
   }
 ];

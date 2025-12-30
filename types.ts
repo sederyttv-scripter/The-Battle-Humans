@@ -38,6 +38,7 @@ export interface ActiveUnit {
   lastAttackTime: number;
   lastAbilityTime?: number;
   isAltForm?: boolean;
+  hasThrownShotgun?: boolean; // Specific for Shotgunner Boss
 }
 
 export interface GameState {

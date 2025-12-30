@@ -2,6 +2,7 @@
 class SoundManager {
   private ctx: AudioContext | null = null;
   private isPlayingTheme: boolean = false;
+  private isBossTheme: boolean = false;
   private nextNoteTime: number = 0;
   private timerID: number | null = null;
   private beatCount: number = 0;
@@ -75,11 +76,16 @@ class SoundManager {
 
   // --- Background Music Scheduler ---
 
-  startBattleTheme() {
-    if (this.isPlayingTheme) return;
+  startBattleTheme(isBoss: boolean = false) {
+    if (this.isPlayingTheme && this.isBossTheme === isBoss) return;
+    this.stopBattleTheme(); // Reset if switching modes
+    
     this.init();
     this.isPlayingTheme = true;
+    this.isBossTheme = isBoss;
     this.beatCount = 0;
+    this.tempo = isBoss ? 140 : 110; // Faster tempo for boss
+    
     // Start slightly in the future to allow setup
     this.nextNoteTime = this.ctx!.currentTime + 0.1;
     this.scheduler();
@@ -99,12 +105,42 @@ class SoundManager {
     // While there are notes that will need to play before the next interval, schedule them
     // schedule ahead time of 0.1s
     while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
-      this.scheduleNote(this.beatCount, this.nextNoteTime);
+      if (this.isBossTheme) {
+          this.scheduleBossNote(this.beatCount, this.nextNoteTime);
+      } else {
+          this.scheduleNote(this.beatCount, this.nextNoteTime);
+      }
       this.nextNoteTime += (60.0 / this.tempo) / 4; // 16th notes
       this.beatCount++;
     }
 
     this.timerID = window.setTimeout(this.scheduler.bind(this), 25);
+  }
+
+  private scheduleBossNote(beatNumber: number, time: number) {
+    const step = beatNumber % 16;
+    
+    // Aggressive Bass (Sawtooth)
+    if (step % 2 === 0) {
+       this.playTone(55, 'sawtooth', 0.1, 0.2, time); // Low A
+    }
+    
+    // Industrial Percussion
+    if (step === 4 || step === 12) {
+       this.playTone(150, 'square', 0.1, 0.15, time); // Hard Snare
+       this.playTone(100, 'sawtooth', 0.15, 0.2, time);
+    }
+    
+    // Fast Hi-hats
+    this.playTone(9000 + Math.random() * 500, 'square', 0.01, 0.03, time);
+
+    // Menacing Melody (Dissonant)
+    const melodyVol = 0.1;
+    if (step === 0) this.playTone(440, 'triangle', 0.1, melodyVol, time); // A4
+    if (step === 3) this.playTone(311, 'triangle', 0.1, melodyVol, time); // Eb4 (Tritone)
+    if (step === 6) this.playTone(440, 'triangle', 0.1, melodyVol, time); // A4
+    if (step === 9) this.playTone(311, 'triangle', 0.1, melodyVol, time); // Eb4
+    if (step === 12) this.playTone(220, 'square', 0.2, melodyVol, time); // A3
   }
 
   private scheduleNote(beatNumber: number, time: number) {
