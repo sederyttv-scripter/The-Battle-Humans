@@ -819,9 +819,19 @@ export default function App() {
                  unitToSpawn = 'e_boss_shotgunner';
                  setBossSpawned(true);
               } else if (bossSpawned) {
-                 // Regular spawns to support boss
-                 if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                    unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 4000;
+                 // Regular spawns to support boss: Baller, Builder, Pistoler, Battler
+                 if (enemyCooldownsRef.current['e_baller'] === 0 && enemyMoneyRef.current >= 250) {
+                    unitToSpawn = 'e_baller'; 
+                    enemyCooldownsRef.current['e_baller'] = 10000;
+                 } else if (enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 300) {
+                    unitToSpawn = 'e_builder'; 
+                    enemyCooldownsRef.current['e_builder'] = 15000;
+                 } else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
+                    unitToSpawn = 'e_pistoler';
+                    enemyCooldownsRef.current['e_pistoler'] = 6000;
+                 } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
+                    unitToSpawn = 'e_battler'; 
+                    enemyCooldownsRef.current['e_battler'] = 2500;
                  }
               }
           }
