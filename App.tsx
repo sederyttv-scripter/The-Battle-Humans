@@ -35,6 +35,7 @@ import {
 } from './constants';
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
+import { StageSelectionScreen, evaluateStageSpawns } from './stage';
 
 // --- Storage Helpers (Cookies) ---
 
@@ -79,75 +80,6 @@ const ScreenWrapper: React.FC<{ children: React.ReactNode, className?: string }>
   </div>
 );
 
-const UnitCard: React.FC<{ 
-  unit: UnitType, 
-  money: number, 
-  unitLevel: number,
-  isAltPreferred: boolean,
-  lastSpawnTime: number,
-  onDeploy: (unitId: string) => void 
-}> = ({ unit, money, unitLevel, isAltPreferred, lastSpawnTime, onDeploy }) => {
-  const [now, setNow] = useState(Date.now());
-  
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 100);
-    return () => clearInterval(interval);
-  }, []);
-
-  const timeSinceLastSpawn = now - lastSpawnTime;
-  const isOffCooldown = timeSinceLastSpawn >= unit.spawnCooldown;
-  const cooldownPercent = Math.min(100, (timeSinceLastSpawn / unit.spawnCooldown) * 100);
-  
-  const isAltActive = unitLevel >= 10 && !!unit.altForm && isAltPreferred;
-  const stats = isAltActive ? unit.altForm! : unit;
-  const canAfford = money >= stats.cost;
-  const isDisabled = !canAfford || !isOffCooldown;
-
-  return (
-    <button 
-      onClick={() => onDeploy(unit.id)}
-      disabled={isDisabled}
-      className={`relative w-[4.5rem] h-24 md:w-20 md:h-28 flex flex-col items-center justify-between p-1 rounded-xl border-b-4 transition-all duration-75 overflow-hidden shrink-0 group ${
-        !isDisabled 
-          ? 'bg-slate-800 border-blue-600 hover:bg-slate-700 active:scale-95 active:border-b-0 active:translate-y-1 shadow-lg' 
-          : 'bg-slate-900 border-slate-800 opacity-70 cursor-not-allowed grayscale'
-      }`}
-    >
-      {/* Cooldown Overlay */}
-      {!isOffCooldown && (
-        <div 
-          className="absolute inset-0 bg-black/70 z-20 flex items-center justify-center"
-        >
-           <div className="text-white font-black text-[10px] md:text-xs">
-             {((unit.spawnCooldown - timeSinceLastSpawn) / 1000).toFixed(1)}s
-           </div>
-           <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" style={{ width: `${cooldownPercent}%` }}></div>
-        </div>
-      )}
-      
-      {/* Unit Visual */}
-      <div className="flex-1 flex items-center justify-center z-10 scale-75 md:scale-90">
-        <BattlerVisual typeId={unit.id} isAltForm={isAltActive} />
-      </div>
-
-      {/* Info Footer */}
-      <div className="w-full bg-slate-950/80 p-1 flex flex-col items-center z-10 rounded-b-lg">
-        <div className="text-[8px] md:text-[9px] font-bold uppercase tracking-tight text-slate-300 w-full text-center truncate leading-none mb-0.5">
-          {isAltActive ? unit.altForm!.name : unit.name}
-        </div>
-        <div className={`text-[10px] md:text-xs font-mono font-black ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>
-          ${stats.cost}
-        </div>
-      </div>
-
-      {/* Level Badge */}
-      <div className="absolute top-1 right-1 text-[8px] font-black bg-blue-900/80 text-blue-200 px-1 rounded z-20 border border-blue-500/30">
-        L{unitLevel}
-      </div>
-    </button>
-  );
-};
-
 const BattlerVisual: React.FC<{ 
   typeId?: string,
   isHeavy?: boolean, 
@@ -167,6 +99,7 @@ const BattlerVisual: React.FC<{
   
   const isConstructing = typeId === 'e_builder' && lastAbilityTime && (now - lastAbilityTime < 1500);
   const isSlamming = typeId === 'e_boss_shotgunner' && lastAbilityTime && (now - lastAbilityTime < 1000);
+  const isThrowingCake = typeId === 'e_cake_thrower' && lastAbilityTime && (now - lastAbilityTime < 600);
   
   if (typeId === 'e_wall') {
     return (
@@ -277,7 +210,7 @@ const BattlerVisual: React.FC<{
       );
       case 'e_builder': return (
         <>
-          <div className="absolute top-[4px] left-1/2 -translate-x-1/2 w-5 h-2.5 bg-orange-500 rounded-t-full z-10 border border-orange-700 shadow-sm"></div>
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-2.5 bg-orange-500 rounded-t-full z-10 border border-orange-700 shadow-sm"></div>
           {isConstructing && (
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 animate-hammer-hit z-20">
               <i className="fas fa-hammer text-orange-400 text-2xl drop-shadow-lg"></i>
@@ -316,9 +249,17 @@ const BattlerVisual: React.FC<{
            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full border border-gray-200 z-10"></div>
            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-white rounded-sm border-x border-gray-200 z-10"></div>
            
-           {/* The Cake (Only if not thrown) */}
+           {/* The Cake (Held) */}
            {!hasThrownCake && (
-             <div className={`absolute top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-pink-400 border-2 border-pink-600 rounded z-20 shadow-lg flex items-center justify-center transition-transform ${isAttacking ? 'scale-150 -translate-y-8 rotate-12 opacity-0 duration-500' : ''}`}>
+             <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-pink-400 border-2 border-pink-600 rounded z-20 shadow-lg flex items-center justify-center">
+                <div className="w-6 h-6 bg-pink-300 rounded-sm border border-pink-400/50"></div>
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-2 bg-red-500 rounded-full"></div>
+             </div>
+           )}
+
+           {/* The Cake (Projectile) */}
+           {isThrowingCake && (
+             <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-pink-400 border-2 border-pink-600 rounded z-30 shadow-xl flex items-center justify-center animate-cake-projectile">
                 <div className="w-6 h-6 bg-pink-300 rounded-sm border border-pink-400/50"></div>
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-2 bg-red-500 rounded-full"></div>
              </div>
@@ -346,7 +287,7 @@ const BattlerVisual: React.FC<{
       );
       default: return null;
     }
-  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake]);
+  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake, isThrowingCake]);
 
   return (
     <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' || typeId === 'e_fourth_puncher' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
@@ -389,146 +330,199 @@ const BattlerVisual: React.FC<{
   );
 };
 
-const Battlefield: React.FC<{ 
-  units: ActiveUnit[], 
-  playerBaseHp: number, 
-  enemyBaseHp: number, 
-  maxBaseHp: number, 
-  unitLevels: Record<string, number>, 
-  cannonEffect: boolean, 
-  currentStage: number, 
-  isEnemyImmune: boolean 
-}> = ({ units, playerBaseHp, enemyBaseHp, maxBaseHp, unitLevels, cannonEffect, currentStage, isEnemyImmune }) => {
-  const playerBasePercent = Math.max(0, Math.min(100, (playerBaseHp / maxBaseHp) * 100));
-  const enemyBasePercent = Math.max(0, Math.min(100, (enemyBaseHp / maxBaseHp) * 100));
-  const now = Date.now();
+const UnitCard: React.FC<{ 
+  unit: UnitType, 
+  money: number, 
+  unitLevel: number,
+  isAltPreferred: boolean,
+  lastSpawnTime: number,
+  onDeploy: (unitId: string) => void 
+}> = ({ unit, money, unitLevel, isAltPreferred, lastSpawnTime, onDeploy }) => {
+  const [now, setNow] = useState(Date.now());
   
-  // Custom Map Visuals
-  const getMapBackgroundClass = () => {
-    if (currentStage === 10) return "bg-[#1a0505]"; // Hellish corporate
-    if (currentStage >= 11) return "bg-[#021815]"; // Matrix/Server room
-    return "bg-slate-900";
-  };
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeSinceLastSpawn = now - lastSpawnTime;
+  const isOffCooldown = timeSinceLastSpawn >= unit.spawnCooldown;
+  const cooldownPercent = Math.min(100, (timeSinceLastSpawn / unit.spawnCooldown) * 100);
   
-  const getMapOverlay = () => {
-      if (currentStage === 10) return <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(153,27,27,0.15)_0%,_transparent_80%)] pointer-events-none"></div>;
-      if (currentStage >= 11) return (
-        <>
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,100,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,100,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/50 to-transparent pointer-events-none"></div>
-        </>
-      );
-      return (
-        <>
-            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,_rgba(59,130,246,0.1)_0%,_transparent_70%)]"></div>
-            <div className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
-        </>
-      );
-  };
+  const isAltActive = unitLevel >= 10 && !!unit.altForm && isAltPreferred;
+  const stats = isAltActive ? unit.altForm! : unit;
+  const canAfford = money >= stats.cost;
+  const isDisabled = !canAfford || !isOffCooldown;
 
   return (
-    <div className={`relative w-full h-full min-h-[400px] ${getMapBackgroundClass()} border-b-4 border-slate-950 overflow-hidden shadow-inner transition-colors duration-300 ${cannonEffect ? 'bg-red-900/20' : ''}`}>
-      {getMapOverlay()}
-
-      {cannonEffect && (
-        <div className="absolute inset-0 bg-white/30 z-40 cannon-blast flex items-center justify-center pointer-events-none">
-          <div className="w-full h-24 bg-orange-500/50 blur-xl"></div>
+    <button 
+      onClick={() => onDeploy(unit.id)}
+      disabled={isDisabled}
+      className={`relative w-[4.5rem] h-24 md:w-20 md:h-28 flex flex-col items-center justify-between p-1 rounded-xl border-b-4 transition-all duration-75 overflow-hidden shrink-0 group ${
+        !isDisabled 
+          ? 'bg-slate-800 border-blue-600 hover:bg-slate-700 active:scale-95 active:border-b-0 active:translate-y-1 shadow-lg' 
+          : 'bg-slate-900 border-slate-800 opacity-70 cursor-not-allowed grayscale'
+      }`}
+    >
+      {/* Cooldown Overlay */}
+      {!isOffCooldown && (
+        <div 
+          className="absolute inset-0 bg-black/70 z-20 flex items-center justify-center"
+        >
+           <div className="text-white font-black text-[10px] md:text-xs">
+             {((unit.spawnCooldown - timeSinceLastSpawn) / 1000).toFixed(1)}s
+           </div>
+           <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500" style={{ width: `${cooldownPercent}%` }}></div>
         </div>
       )}
+      
+      {/* Unit Visual */}
+      <div className="flex-1 flex items-center justify-center z-10 scale-75 md:scale-90">
+        <BattlerVisual typeId={unit.id} isAltForm={isAltActive} />
+      </div>
 
-      {/* Bases */}
-      <div className="absolute left-4 bottom-16 md:bottom-20 z-10 flex flex-col items-center group">
-        <div className="relative">
-           <div className="text-8xl text-blue-500/80 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transform transition-transform group-hover:scale-105"><i className="fas fa-building"></i></div>
-           {/* HP Bar Floating above base */}
-           <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-24 bg-slate-950/80 rounded-full p-1 border border-blue-500/30">
-              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                 <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${playerBasePercent}%` }}></div>
-              </div>
-              <div className="text-[9px] text-center text-blue-200 font-mono mt-0.5">{Math.ceil(playerBaseHp)}</div>
-           </div>
+      {/* Info Footer */}
+      <div className="w-full bg-slate-950/80 p-1 flex flex-col items-center z-10 rounded-b-lg">
+        <div className="text-[8px] md:text-[9px] font-bold uppercase tracking-tight text-slate-300 w-full text-center truncate leading-none mb-0.5">
+          {isAltActive ? unit.altForm!.name : unit.name}
+        </div>
+        <div className={`text-[10px] md:text-xs font-mono font-black ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>
+          ${stats.cost}
         </div>
       </div>
 
-      <div className="absolute right-4 bottom-16 md:bottom-20 z-10 flex flex-col items-center group">
-        <div className="relative">
-           <div className={`text-8xl scale-x-[-1] drop-shadow-[0_0_15px_rgba(239,68,68,0.5)] transform transition-transform group-hover:scale-105 ${isEnemyImmune ? 'text-yellow-500/80' : 'text-red-500/80'}`}>
-              <i className={isEnemyImmune ? "fas fa-shield-alt" : "fas fa-industry"}></i>
-           </div>
-           {/* HP Bar Floating above base */}
-           <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-24 bg-slate-950/80 rounded-full p-1 border border-red-500/30">
-              {isEnemyImmune && <div className="absolute -top-4 w-full text-center text-[8px] font-black text-yellow-400 uppercase tracking-widest animate-pulse">Shielded</div>}
-              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                 <div className="h-full bg-red-500 transition-all duration-300" style={{ width: `${enemyBasePercent}%` }}></div>
-              </div>
-              <div className="text-[9px] text-center text-red-200 font-mono mt-0.5">{Math.ceil(enemyBaseHp)}</div>
-           </div>
-        </div>
+      {/* Level Badge */}
+      <div className="absolute top-1 right-1 text-[8px] font-black bg-blue-900/80 text-blue-200 px-1 rounded z-20 border border-blue-500/30">
+        L{unitLevel}
       </div>
+    </button>
+  );
+};
 
-      {/* Units */}
-      {units.map((u) => {
-        const type = (u.side === 'player' ? PLAYER_UNITS : ENEMY_UNITS).find(t => t.id === u.typeId);
-        if (!type) return null;
+const UnitHpBar: React.FC<{ unit: ActiveUnit, unitLevels: Record<string, number>, currentStage: number }> = ({ unit, unitLevels, currentStage }) => {
+    const type = (unit.side === 'player' ? PLAYER_UNITS : ENEMY_UNITS).find(t => t.id === unit.typeId);
+    if (!type) return null;
 
-        const level = u.side === 'player' ? (unitLevels[u.typeId] || 1) : 1;
-        
-        let enemyScaling = 1.0;
-        if (u.side === 'enemy') {
-            if (u.typeId === 'e_battler' && currentStage === 1) enemyScaling = 0.75;
-            if (currentStage === 9) enemyScaling = 0.98;
-            if (currentStage >= 11) enemyScaling = 1.05; // 5% Boost for Stage 11+
-        }
-        
-        const isAlt = u.side === 'player' && level >= 10 && !!type.altForm && u.isAltForm;
-        const currentHpBase = (isAlt ? type.altForm!.hp : type.hp);
-        const maxHp = currentHpBase * (u.side === 'player' ? (1 + (level - 1) * STAT_GAIN_PER_LEVEL) : enemyScaling);
-        const hpPercent = Math.max(0, Math.min(100, (u.currentHp / maxHp) * 100));
-        
-        const isAttacking = now - u.lastAttackTime < 250;
-        const pos = (u.x / FIELD_WIDTH) * 100;
-        
-        // Boss Scale
-        const isBoss = u.typeId === 'e_boss_shotgunner';
-        const isStunned = (u.stunnedUntil || 0) > now;
+    let maxHp = type.hp;
+    if (unit.side === 'player') {
+        const level = unitLevels[unit.typeId] || 1;
+        const isAlt = unit.isAltForm && !!type.altForm;
+        const stats = isAlt ? type.altForm! : type;
+        maxHp = stats.hp * (1 + (level - 1) * STAT_GAIN_PER_LEVEL);
+    } else {
+        let hpScaling = 1.0;
+        if (unit.typeId === 'e_battler' && currentStage === 1) hpScaling = 0.75;
+        if (currentStage === 9) hpScaling = 0.98;
+        if (currentStage >= 11) hpScaling = 1.05;
+        maxHp = type.hp * hpScaling;
+    }
+    
+    if (unit.typeId === 'e_boss_shotgunner') maxHp = 6563; 
 
-        return (
-          <div key={u.instanceId} className={`absolute bottom-20 md:bottom-24 flex flex-col items-center transition-all duration-100 ease-linear z-20 ${isAttacking ? 'recoil' : ''} ${isBoss ? 'z-30' : ''}`} style={{ left: `${pos}%`, transform: `translateX(-50%) ${u.side === 'enemy' ? 'scaleX(-1)' : ''} ${isBoss ? 'scale(1.5)' : ''}` }}>
-            {/* Visual Effect on Attack */}
-            {isAttacking && u.typeId !== 'e_wall' && (
-              <div className={`absolute -top-12 text-4xl slash-effect z-30 pointer-events-none ${type.id === 'e_baller' ? 'text-red-500' : 'text-white'}`}>
-                <i className={
-                  type.id === 'sworder' || type.id === 'e_pistoler' || type.id === 'pistoler' || type.id === 'e_rage_battler' ? 'fas fa-shield-slash text-white' : 
-                  type.id === 'e_baller' ? 'fas fa-circle' :
-                  type.id === 'e_boss_shotgunner' ? 'fas fa-skull text-red-600' :
-                  type.id === 'e_cake_thrower' ? 'fas fa-birthday-cake text-pink-500' :
-                  'fas fa-bolt text-yellow-400'
-                }></i>
-              </div>
-            )}
-            
-            {/* HP Bar */}
-            <div className={`h-1.5 bg-black/50 rounded-full mb-1 overflow-hidden border border-white/10 ${isBoss ? 'w-20' : 'w-10'}`}>
-               <div className={`h-full ${u.side === 'player' ? 'bg-blue-400' : 'bg-red-400'}`} style={{ width: `${hpPercent}%` }} />
+    const pct = Math.max(0, Math.min(100, (unit.currentHp / maxHp) * 100));
+    
+    return (
+        <div className="w-full h-full bg-slate-700">
+            <div className={`h-full ${unit.side === 'player' ? 'bg-green-400' : 'bg-red-400'}`} style={{ width: `${pct}%` }}></div>
+        </div>
+    );
+};
+
+const Battlefield: React.FC<{
+  units: ActiveUnit[];
+  playerBaseHp: number;
+  enemyBaseHp: number;
+  maxBaseHp: number;
+  unitLevels: Record<string, number>;
+  cannonEffect: boolean;
+  currentStage: number;
+  isEnemyImmune: boolean;
+}> = ({ units, playerBaseHp, enemyBaseHp, maxBaseHp, unitLevels, cannonEffect, currentStage, isEnemyImmune }) => {
+  const playerHpPercent = Math.max(0, (playerBaseHp / maxBaseHp) * 100);
+  const enemyHpPercent = Math.max(0, (enemyBaseHp / maxBaseHp) * 100);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-slate-900">
+             <div className="absolute bottom-0 w-full h-1/2 bg-[linear-gradient(to_bottom,transparent_0%,rgba(30,58,138,0.2)_100%)]"></div>
+             <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+        </div>
+        
+        <div className="absolute inset-0 flex items-end pb-32 md:pb-40 px-4 md:px-10">
+            <div className="relative w-full h-40 md:h-56">
+                
+                {/* Player Base */}
+                <div className="absolute left-0 bottom-0 z-10 flex flex-col items-center group">
+                    <div className="mb-2 relative">
+                        <div className="w-24 h-3 bg-slate-800 rounded-full border border-slate-600 overflow-hidden">
+                            <div className="h-full bg-green-500 transition-all duration-300" style={{width: `${playerHpPercent}%`}}></div>
+                        </div>
+                        <div className="text-[9px] font-bold text-white text-center absolute -top-4 w-full text-shadow">{Math.floor(playerBaseHp)} HP</div>
+                    </div>
+                    <div className="w-16 h-32 md:w-24 md:h-40 bg-slate-800 border-2 border-blue-500 rounded-t-xl relative shadow-[0_0_30px_rgba(59,130,246,0.3)] flex items-end justify-center">
+                        <div className="absolute inset-0 bg-blue-900/20"></div>
+                        <div className="text-4xl text-blue-500/50 mb-4"><i className="fas fa-building"></i></div>
+                    </div>
+                </div>
+
+                {/* Enemy Base */}
+                <div className="absolute right-0 bottom-0 z-10 flex flex-col items-center">
+                    <div className="mb-2 relative">
+                        <div className="w-24 h-3 bg-slate-800 rounded-full border border-slate-600 overflow-hidden">
+                            <div className="h-full bg-red-500 transition-all duration-300" style={{width: `${enemyHpPercent}%`}}></div>
+                        </div>
+                         <div className="text-[9px] font-bold text-white text-center absolute -top-4 w-full text-shadow">{Math.ceil(enemyBaseHp)} HP</div>
+                    </div>
+                    <div className={`w-16 h-32 md:w-24 md:h-40 bg-slate-800 border-2 border-red-500 rounded-t-xl relative shadow-[0_0_30px_rgba(239,68,68,0.3)] flex items-end justify-center ${isEnemyImmune ? 'opacity-50' : ''}`}>
+                         <div className="absolute inset-0 bg-red-900/20"></div>
+                         <div className="text-4xl text-red-500/50 mb-4"><i className="fas fa-industry"></i></div>
+                    </div>
+                </div>
+
+                {/* Units Layer */}
+                <div className="absolute inset-x-16 md:inset-x-24 bottom-0 h-full pointer-events-none">
+                    {units.map(unit => {
+                        const leftPercent = (unit.x / FIELD_WIDTH) * 100;
+                        const isEnemy = unit.side === 'enemy';
+                        
+                        return (
+                            <div 
+                                key={unit.instanceId} 
+                                className="absolute bottom-0 transition-all duration-100 ease-linear will-change-transform"
+                                style={{ 
+                                    left: `${leftPercent}%`, 
+                                    transform: `translateX(-50%)`, 
+                                    zIndex: Math.floor(unit.x) 
+                                }}
+                            >
+                                <div className={`relative ${isEnemy ? 'scale-x-[-1]' : ''}`}>
+                                    {/* HP Bar */}
+                                    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/50 rounded-full overflow-hidden ${isEnemy ? 'scale-x-[-1]' : ''}`}>
+                                        <UnitHpBar unit={unit} unitLevels={unitLevels} currentStage={currentStage} />
+                                    </div>
+                                    
+                                    <BattlerVisual 
+                                        typeId={unit.typeId} 
+                                        isAttacking={Date.now() - unit.lastAttackTime < 300}
+                                        lastAbilityTime={unit.lastAbilityTime}
+                                        isAltForm={unit.isAltForm}
+                                        hasThrownShotgun={unit.hasThrownShotgun}
+                                        hasThrownCake={unit.hasThrownCake}
+                                        isStunned={!!(unit.stunnedUntil && unit.stunnedUntil > Date.now())}
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
-            
-            {/* Unit */}
-            <div className={`filter drop-shadow-lg ${u.typeId !== 'e_wall' && !isBoss && !isStunned ? 'animate-bounce' : ''}`} style={{ animationDuration: `${0.8 / (type.speed || 1)}s` }}>
-              <BattlerVisual 
-                typeId={u.typeId} 
-                isHeavy={type.icon?.includes('heavy')} 
-                isAttacking={isAttacking} 
-                hasHat={type.id === 'e_builder'} 
-                lastAbilityTime={u.lastAbilityTime}
-                isAltForm={u.isAltForm}
-                hasThrownShotgun={u.hasThrownShotgun}
-                hasThrownCake={u.hasThrownCake}
-                isStunned={isStunned}
-              />
+        </div>
+
+        {cannonEffect && (
+            <div className="absolute inset-0 z-40 bg-orange-500/20 flex items-center justify-center animate-pulse pointer-events-none">
+                 <div className="absolute top-0 w-full h-full bg-gradient-to-b from-orange-500/50 to-transparent"></div>
             </div>
-          </div>
-        );
-      })}
+        )}
     </div>
   );
 };
@@ -897,194 +891,36 @@ export default function App() {
         
         let unitToSpawn = null;
         
-        // --- SPAWN LOGIC START ---
+        // --- SPAWN LOGIC START (REFACTORED to stage.tsx) ---
         if (timeElapsed > 5000 && !prev.sandboxPaused) {
-          // STAGE 13 LOGIC: Cake Thrower
-          if (prev.currentStage === 13) {
-             if (enemyCooldownsRef.current['e_cake_thrower'] === 0 && enemyMoneyRef.current >= 200) {
-                 unitToSpawn = 'e_cake_thrower'; enemyCooldownsRef.current['e_cake_thrower'] = 8000;
-             } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                 unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 2500;
-             } else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-                 unitToSpawn = 'e_pistoler'; enemyCooldownsRef.current['e_pistoler'] = 6000;
-             }
-          }
-          // STAGE 12 LOGIC: Puncher Bros
-          else if (prev.currentStage === 12) {
-             if (enemyCooldownsRef.current['e_fourth_puncher'] === 0 && enemyMoneyRef.current >= 350) {
-                 unitToSpawn = 'e_fourth_puncher'; enemyCooldownsRef.current['e_fourth_puncher'] = 9000;
-             } else if (enemyCooldownsRef.current['e_double_puncher'] === 0 && enemyMoneyRef.current >= 150) {
-                 unitToSpawn = 'e_double_puncher'; enemyCooldownsRef.current['e_double_puncher'] = 4000;
-             } else if (enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 300) {
-                 unitToSpawn = 'e_builder'; enemyCooldownsRef.current['e_builder'] = 15000;
-             }
-          }
-          // STAGE 11 LOGIC: Fourth Puncher Debut
-          else if (prev.currentStage === 11) {
-             if (enemyCooldownsRef.current['e_fourth_puncher'] === 0 && enemyMoneyRef.current >= 350) {
-                 unitToSpawn = 'e_fourth_puncher'; enemyCooldownsRef.current['e_fourth_puncher'] = 12000;
-             } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                 unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 2500;
-             }
-          }
-          // STAGE 10 LOGIC: No Mercy (Boss Stage)
-          else if (prev.currentStage === 10) {
-              if (!bossSpawned && timeElapsed > 2000) {
-                 // Summon Boss immediately after "shield" (start delay)
-                 unitToSpawn = 'e_boss_shotgunner';
-                 setBossSpawned(true);
-              } else if (bossSpawned) {
-                 // Regular spawns to support boss: Baller, Builder, Pistoler, Battler
-                 if (enemyCooldownsRef.current['e_baller'] === 0 && enemyMoneyRef.current >= 250) {
-                    unitToSpawn = 'e_baller'; 
-                    enemyCooldownsRef.current['e_baller'] = 10000;
-                 } else if (enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 300) {
-                    unitToSpawn = 'e_builder'; 
-                    enemyCooldownsRef.current['e_builder'] = 15000;
-                 } else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-                    unitToSpawn = 'e_pistoler';
-                    enemyCooldownsRef.current['e_pistoler'] = 6000;
-                 } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                    unitToSpawn = 'e_battler'; 
-                    enemyCooldownsRef.current['e_battler'] = 2500;
-                 }
-              }
-          }
-          // STAGE 9 LOGIC: Nine of a Kinds (Strategic)
-          else if (prev.currentStage === 9) {
-             const enemiesOnField = prev.units.filter(u => u.side === 'enemy');
-             // Count melee/tank units including walls
-             const frontliners = enemiesOnField.filter(u => ['e_battler', 'e_double_puncher', 'e_rage_battler', 'e_wall'].includes(u.typeId)).length;
-             
-             // Maintain a frontline of at least 4 units
-             if (frontliners < 4) {
-                 const meatshields = ['e_battler', 'e_double_puncher', 'e_rage_battler'];
-                 const available = meatshields.filter(id => {
-                    const u = ENEMY_UNITS.find(e => e.id === id)!;
-                    return enemyMoneyRef.current >= u.cost && enemyCooldownsRef.current[id] === 0;
-                 });
-                 if (available.length > 0) {
-                     const pick = available[Math.floor(Math.random() * available.length)];
-                     unitToSpawn = pick;
-                     enemyCooldownsRef.current[pick] = ENEMY_UNITS.find(e => e.id === pick)!.spawnCooldown;
-                 }
-             } 
-             // If frontline is sufficient, try to spawn backliners
-             else {
-                 const backliners = ['e_baller', 'e_pistoler', 'e_builder'];
-                 const available = backliners.filter(id => {
-                    const u = ENEMY_UNITS.find(e => e.id === id)!;
-                    return enemyMoneyRef.current >= u.cost && enemyCooldownsRef.current[id] === 0;
-                 });
-                 if (available.length > 0) {
-                     const pick = available[Math.floor(Math.random() * available.length)];
-                     unitToSpawn = pick;
-                     enemyCooldownsRef.current[pick] = ENEMY_UNITS.find(e => e.id === pick)!.spawnCooldown;
-                 } else {
-                     // If can't spawn backliner (cooldowns/money), but have excess money, reinforce frontline
-                     if (enemyMoneyRef.current > 400) {
-                         const meatshields = ['e_battler', 'e_double_puncher', 'e_rage_battler'];
-                         const availableMS = meatshields.filter(id => {
-                            const u = ENEMY_UNITS.find(e => e.id === id)!;
-                            return enemyMoneyRef.current >= u.cost && enemyCooldownsRef.current[id] === 0;
-                         });
-                         if (availableMS.length > 0) {
-                             const pick = availableMS[Math.floor(Math.random() * availableMS.length)];
-                             unitToSpawn = pick;
-                             enemyCooldownsRef.current[pick] = ENEMY_UNITS.find(e => e.id === pick)!.spawnCooldown;
-                         }
-                     }
-                 }
-             }
-          }
-          // STAGE 8 LOGIC: Bullet Hell
-          else if (prev.currentStage === 8) {
-             // Wall builder spawns
-             if (enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 300) {
-                unitToSpawn = 'e_builder'; enemyCooldownsRef.current['e_builder'] = 15000;
-             } 
-             // Baller knockback support
-             else if (enemyCooldownsRef.current['e_baller'] === 0 && enemyMoneyRef.current >= 250) {
-                unitToSpawn = 'e_baller'; enemyCooldownsRef.current['e_baller'] = 5000;
-             }
-             // Rapid fire pistolers
-             else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-                unitToSpawn = 'e_pistoler'; enemyCooldownsRef.current['e_pistoler'] = 2500; 
-             }
-          }
-          // STAGE 7 LOGIC: Baller's Rise
-          else if (prev.currentStage === 7) {
-            if (enemyCooldownsRef.current['e_baller'] === 0 && enemyMoneyRef.current >= 250) {
-              unitToSpawn = 'e_baller'; 
-              enemyCooldownsRef.current['e_baller'] = 8000;
-            } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 100) {
-              unitToSpawn = 'e_battler'; 
-              enemyCooldownsRef.current['e_battler'] = 2000;
-            } else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-              unitToSpawn = 'e_pistoler';
-              enemyCooldownsRef.current['e_pistoler'] = 10000;
+          const spawnCommand = evaluateStageSpawns({
+            stageId: prev.currentStage,
+            timeElapsed,
+            enemyMoney: enemyMoneyRef.current,
+            enemyCooldowns: enemyCooldownsRef.current,
+            units: prev.units,
+            enemyBaseHp: prev.enemyBaseHp,
+            bossSpawned
+          });
+
+          if (spawnCommand) {
+            if (spawnCommand.setBossSpawned) {
+              setBossSpawned(true);
             }
-          }
-          // STAGE 6 LOGIC: MeatShielding
-          else if (prev.currentStage === 6) {
-            const maxHp = 500 + (prev.currentStage - 1) * 1000;
-            const isBaseLow = prev.enemyBaseHp < maxHp * 0.8;
-            if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-              unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 1500;
-            } else if (enemyCooldownsRef.current['e_double_puncher'] === 0 && enemyMoneyRef.current >= 150) {
-              unitToSpawn = 'e_double_puncher'; enemyCooldownsRef.current['e_double_puncher'] = 4500;
-            } else if ((timeElapsed > 30000 || isBaseLow) && enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-              unitToSpawn = 'e_pistoler'; enemyCooldownsRef.current['e_pistoler'] = 8000;
-            }
-          } else if (prev.currentStage === 5) {
-            const chance = Math.random();
-            if (chance < 0.12 && enemyCooldownsRef.current['e_rage_battler'] === 0 && enemyMoneyRef.current >= 100) {
-              unitToSpawn = 'e_rage_battler'; enemyCooldownsRef.current['e_rage_battler'] = 3500;
-            }
-          } else {
-            // General Logic
-            if (prev.currentStage >= 3 && prev.currentStage <= 5) {
-              const chance = Math.random();
-              if (chance < 0.15 && enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 120) {
-                  unitToSpawn = 'e_builder'; enemyCooldownsRef.current['e_builder'] = 18000;
-              }
-            }
-            if (!unitToSpawn && prev.currentStage >= 4 && prev.currentStage <= 5) {
-              const chance = Math.random();
-              if (chance < 0.1 && enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
-                  unitToSpawn = 'e_pistoler'; enemyCooldownsRef.current['e_pistoler'] = 12000;
-              }
-            }
-            if (!unitToSpawn) {
-              if (prev.currentStage === 2) {
-                const chance = Math.random();
-                if (chance < 0.15 && enemyCooldownsRef.current['e_double_puncher'] === 0 && enemyMoneyRef.current >= 150) {
-                  unitToSpawn = 'e_double_puncher'; enemyCooldownsRef.current['e_double_puncher'] = 10000;
-                } else if (chance < 0.35 && enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                  unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 5000;
-                }
-              } else if (prev.currentStage >= 3) {
-                const chance = Math.random();
-                if (chance < 0.15 && enemyCooldownsRef.current['e_double_puncher'] === 0 && enemyMoneyRef.current >= 150) {
-                  unitToSpawn = 'e_double_puncher'; enemyCooldownsRef.current['e_double_puncher'] = 6000;
-                } else if (chance < 0.4 && enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                  unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 3000;
-                }
-              } else if (prev.currentStage === 1) {
-                const chance = Math.random();
-                if (chance < 0.25 && enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
-                  unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 8000;
-                }
-              }
-            }
+            
+            unitToSpawn = spawnCommand.unitId;
+            // Set cooldown
+            enemyCooldownsRef.current[spawnCommand.unitId] = spawnCommand.cooldown;
           }
 
           if (unitToSpawn) {
             // BOSS SPAWN FIX: Don't deduct cost for Boss in Stage 10 to allow it to spawn support
+            // (Preserving original logic behavior)
             if (unitToSpawn !== 'e_boss_shotgunner') {
-                enemyMoneyRef.current -= ENEMY_UNITS.find(e => e.id === unitToSpawn)!.cost;
+                const u = ENEMY_UNITS.find(e => e.id === unitToSpawn);
+                if (u) enemyMoneyRef.current -= u.cost;
             }
-            setTimeout(() => deployUnit('enemy', unitToSpawn), 0);
+            setTimeout(() => deployUnit('enemy', unitToSpawn!), 0);
           }
         }
         // --- SPAWN LOGIC END ---
@@ -1224,6 +1060,7 @@ export default function App() {
               // --- CAKE THROWER LOGIC ---
               else if (u.typeId === 'e_cake_thrower' && !u.hasThrownCake) {
                   u.hasThrownCake = true;
+                  u.lastAbilityTime = now; // MARK THROW TIME FOR ANIMATION
                   target.currentHp -= actualDmg;
                   target.stunnedUntil = now + 3000; // 3s Stun
                   sounds.playBaseHit(); // Heavy impact
@@ -1518,62 +1355,11 @@ export default function App() {
       case 'stages':
         return (
             <ScreenWrapper>
-                <div className="flex-none p-6 md:p-10">
-                    <div className="flex items-center gap-4">
-                        <button onClick={exitToMenu} className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors text-slate-400 hover:text-white"><i className="fas fa-arrow-left"></i></button>
-                        <h1 className="text-4xl font-black italic tracking-tighter">OPERATIONS MAP</h1>
-                    </div>
-                </div>
-                <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl">
-                        {STAGE_CONFIG.map(stage => {
-                            const isUnlocked = gameState.unlockedStages.includes(stage.id);
-                            const isBeaten = gameState.unlockedStages.includes(stage.id + 1);
-                            
-                            return (
-                                <button 
-                                    key={stage.id}
-                                    disabled={!isUnlocked}
-                                    onClick={() => startBattle(stage.id)}
-                                    className={`relative group rounded-3xl overflow-hidden text-left shadow-xl transition-all ${isUnlocked ? 'hover:scale-[1.02] hover:shadow-2xl' : 'opacity-60 grayscale cursor-not-allowed'}`}
-                                >
-                                    {/* Thumbnail Section */}
-                                    <div className={`h-32 bg-gradient-to-br ${stage.color} relative overflow-hidden flex items-center justify-center`}>
-                                        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                                        <i className={`${stage.icon} text-8xl text-white/20 absolute -right-4 -bottom-4 transform -rotate-12 group-hover:scale-110 transition-transform duration-500`}></i>
-                                        <div className="relative z-10 text-4xl text-white drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                                            <i className={stage.icon}></i>
-                                        </div>
-                                        {isBeaten && (
-                                            <div className="absolute top-3 left-3 bg-green-500 text-slate-900 text-[10px] font-black uppercase px-2 py-1 rounded-full shadow-lg z-20">
-                                                <i className="fas fa-check mr-1"></i> Complete
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Info Section */}
-                                    <div className="bg-slate-900 p-4 border-t border-white/5 h-24 flex flex-col justify-center relative">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5">
-                                            Stage 0{stage.id}
-                                        </div>
-                                        <div className={`text-xl font-black italic leading-none mb-1 ${isUnlocked ? 'text-white' : 'text-slate-600'}`}>
-                                            {stage.name}
-                                        </div>
-                                        <div className="text-xs text-slate-400 font-medium truncate">
-                                            {stage.subtitle}
-                                        </div>
-
-                                        {!isUnlocked && (
-                                            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-[1px] flex items-center justify-center">
-                                                <i className="fas fa-lock text-slate-500 text-xl"></i>
-                                            </div>
-                                        )}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
+                <StageSelectionScreen 
+                    unlockedStages={gameState.unlockedStages} 
+                    onSelectStage={(id) => startBattle(id)} 
+                    onExit={exitToMenu} 
+                />
             </ScreenWrapper>
         );
       case 'shop':
@@ -1887,6 +1673,15 @@ export default function App() {
           100% { transform: scale(1.5) translateY(0); }
         }
 
+        /* Cake Throw Animation */
+        @keyframes cake-projectile {
+          0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+          25% { transform: translate(40px, -20px) rotate(90deg) scale(1.1); }
+          50% { transform: translate(80px, -30px) rotate(180deg) scale(1.2); }
+          75% { transform: translate(120px, -15px) rotate(270deg) scale(1.1); }
+          100% { transform: translate(160px, 10px) rotate(360deg) scale(1); opacity: 0; }
+        }
+
         /* Classes */
         .animate-float { animation: float 6s ease-in-out infinite; }
         .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
@@ -1904,6 +1699,7 @@ export default function App() {
         .animate-idle-boss { animation: idle-boss 2s ease-in-out infinite; }
         .animate-vibrate { animation: vibrate 0.1s linear infinite; }
         .animate-boss-slam { animation: boss-slam 1s ease-in-out forwards; }
+        .animate-cake-projectile { animation: cake-projectile 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
 
         /* Utilities */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
