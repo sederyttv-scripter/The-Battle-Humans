@@ -40,6 +40,8 @@ export interface ActiveUnit {
   isAltForm?: boolean;
   hasThrownShotgun?: boolean; // Specific for Shotgunner Boss
   hasSlammed?: boolean; // Specific for Shotgunner Boss Phase 3
+  hasThrownCake?: boolean; // Specific for Cake Thrower
+  stunnedUntil?: number; // Timestamp until which unit is stunned
 }
 
 export interface GameState {

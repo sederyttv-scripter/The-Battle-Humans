@@ -1,7 +1,7 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.6.6'; // Boss One-Shot Buff
+export const GAME_VERSION = '1.7.1'; // Cooldown Adjustment Update
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
@@ -50,6 +50,9 @@ export const STAGE_CONFIG = [
   { id: 8, name: "Bullet Hell", subtitle: "Infinite Barrage", icon: "fas fa-meteor", color: "from-red-900 to-slate-950" },
   { id: 9, name: "Nine of a Kinds", subtitle: "Total Chaos", icon: "fas fa-dice-d20", color: "from-fuchsia-600 to-fuchsia-900" },
   { id: 10, name: "No Mercy!", subtitle: "The Shotgunner", icon: "fas fa-skull-crossbones", color: "from-slate-800 to-black" },
+  { id: 11, name: "Fourth Puncher", subtitle: "Productivity Hack", icon: "fas fa-hands", color: "from-emerald-800 to-black" },
+  { id: 12, name: "Puncher Bros", subtitle: "Synergy Strike Team", icon: "fas fa-handshake", color: "from-cyan-800 to-blue-950" },
+  { id: 13, name: "Cake Thrower", subtitle: "Sweet Surprise", icon: "fas fa-birthday-cake", color: "from-pink-600 to-purple-900" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -63,7 +66,7 @@ export const PLAYER_UNITS: UnitType[] = [
     speed: 4, 
     range: 40,
     attackCooldown: 1000,
-    spawnCooldown: 2000,
+    spawnCooldown: 2000, // Unchanged
     unlockLevel: 1,
     description: 'Entry-level asset. Fragile but cost-effective for early game pressure.',
     altForm: {
@@ -82,18 +85,18 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Human Tank',
     icon: 'fas fa-user-shield',
     cost: 200,
-    hp: 966, // Nerfed 19.5%
-    damage: 6, // Nerfed 19.5%
+    hp: 966,
+    damage: 6,
     speed: 1.5,
     range: 35,
     attackCooldown: 1500,
-    spawnCooldown: 5000,
+    spawnCooldown: 5750, // Increased by 15% (Base 5000 * 1.15)
     unlockLevel: 2,
     description: 'A dedicated damage sponge. Extremely low offensive capability but high survivability.',
     altForm: {
       name: 'Human Fortress',
-      hp: 1369, // Nerfed 19.5%
-      damage: 6, // Nerfed 19.5%
+      hp: 1369,
+      damage: 6,
       speed: 0.8,
       range: 35,
       attackCooldown: 1500,
@@ -106,18 +109,18 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Sworder',
     icon: 'fas fa-khanda',
     cost: 200,
-    hp: 362, // Nerfed 19.5%
-    damage: 24, // Nerfed 19.5%
+    hp: 362,
+    damage: 24,
     speed: 5, 
     range: 55,
     attackCooldown: 1000,
-    spawnCooldown: 6000,
+    spawnCooldown: 6900, // Increased by 15% (Base 6000 * 1.15)
     unlockLevel: 3,
     description: 'Melee specialist wielding a corporate letter opener. High attack speed and solid damage.',
     altForm: {
       name: 'Blacksteel',
-      hp: 362, // Nerfed 19.5%
-      damage: 72, // Nerfed 19.5%
+      hp: 362,
+      damage: 72,
       speed: 5, 
       range: 85,
       attackCooldown: 3000,
@@ -130,26 +133,36 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Pistoler',
     icon: 'fas fa-gun',
     cost: 200,
-    hp: 185, // Nerfed 19.5%
-    damage: 31, // Nerfed 19.5%
+    hp: 185,
+    damage: 31,
     speed: 1.9, 
     range: 350,
     attackCooldown: 1250,
-    spawnCooldown: 4000,
+    spawnCooldown: 4600, // Increased by 15% (Base 4000 * 1.15)
     unlockLevel: 4,
-    description: 'Mid-range firearm specialist. Delivers consistent high-velocity damage from a distance.'
+    description: 'Mid-range firearm specialist. Delivers consistent high-velocity damage from a distance.',
+    altForm: {
+      name: 'SMG Gunner',
+      hp: 185,
+      damage: 31,
+      speed: 1.9, 
+      range: 350,
+      attackCooldown: 500,
+      cost: 400,
+      description: 'Trades budget for fire rate. Wields a submachine gun for rapid suppression.'
+    }
   },
   {
     id: 'guard',
     name: 'Security',
     icon: 'fas fa-shield-halved',
     cost: 550,
-    hp: 2013, // Nerfed 19.5%
-    damage: 40, // Nerfed 19.5%
+    hp: 2013,
+    damage: 40,
     speed: 2, 
     range: 45,
     attackCooldown: 1200,
-    spawnCooldown: 15000,
+    spawnCooldown: 17250, // Increased by 15% (Base 15000 * 1.15)
     unlockLevel: 4,
     description: 'Elite defensive personnel. Solid stats across the board.'
   },
@@ -158,12 +171,12 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Lead Dev',
     icon: 'fas fa-laptop-code',
     cost: 950,
-    hp: 483, // Nerfed 19.5%
-    damage: 201, // Nerfed 19.5%
+    hp: 483,
+    damage: 201,
     speed: 3, 
     range: 400,
     attackCooldown: 2500,
-    spawnCooldown: 25000,
+    spawnCooldown: 28750, // Increased by 15% (Base 25000 * 1.15)
     unlockLevel: 5,
     description: 'Long-range specialist. Delivers massive critical updates from afar.'
   },
@@ -172,12 +185,12 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'The CEO',
     icon: 'fas fa-user-tie',
     cost: 3000,
-    hp: 5233, // Nerfed 19.5%
-    damage: 604, // Nerfed 19.5%
+    hp: 5233,
+    damage: 604,
     speed: 1.2,
     range: 150,
     attackCooldown: 3500,
-    spawnCooldown: 60000,
+    spawnCooldown: 69000, // Increased by 15% (Base 60000 * 1.15)
     unlockLevel: 5,
     description: 'Corporate God. Immense health and world-ending damage.'
   }
@@ -191,10 +204,10 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 80,
     hp: 170,
     damage: 18,
-    speed: 3.5, // Reverted to Original
+    speed: 3.5, 
     range: 40,
     attackCooldown: 1010,
-    spawnCooldown: 3000,
+    spawnCooldown: 3000, // Unchanged
     unlockLevel: 0,
     description: 'A standard human combatant with a distinct red, blue, and yellow uniform.'
   },
@@ -208,9 +221,23 @@ export const ENEMY_UNITS: UnitType[] = [
     speed: 2.5, 
     range: 40,
     attackCooldown: 1500,
-    spawnCooldown: 6000,
+    spawnCooldown: 6000, // Unchanged
     unlockLevel: 0,
     description: 'A heavy hitter with a 1-2 punch combo.'
+  },
+  {
+    id: 'e_fourth_puncher',
+    name: 'Fourth Puncher Battler',
+    icon: 'custom-battler-heavy',
+    cost: 350,
+    hp: 550,
+    damage: 72,
+    speed: 2.5, 
+    range: 40,
+    attackCooldown: 1500,
+    spawnCooldown: 9000, // Unchanged
+    unlockLevel: 0,
+    description: 'A multi-tasking monstrosity with two extra arms growing from its back.'
   },
   {
     id: 'e_pistoler',
@@ -219,10 +246,10 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 200,
     hp: 230,
     damage: 38,
-    speed: 1.8, // Reduced to be slower than Builder (2)
+    speed: 1.8, 
     range: 350,
     attackCooldown: 1250,
-    spawnCooldown: 4000,
+    spawnCooldown: 4000, // Unchanged
     unlockLevel: 0,
     description: 'Provides ranged support for the enemy lines.'
   },
@@ -236,7 +263,7 @@ export const ENEMY_UNITS: UnitType[] = [
     speed: 2,
     range: 50,
     attackCooldown: 2000,
-    spawnCooldown: 15000,
+    spawnCooldown: 15000, // Unchanged
     unlockLevel: 0,
     description: 'A construction worker who builds defensive walls.'
   },
@@ -264,7 +291,7 @@ export const ENEMY_UNITS: UnitType[] = [
     speed: 7, 
     range: 40,
     attackCooldown: 500,
-    spawnCooldown: 5000,
+    spawnCooldown: 5000, // Unchanged
     unlockLevel: 0,
     description: 'A furious combatant who attacks rapidly when provoked.'
   },
@@ -275,25 +302,39 @@ export const ENEMY_UNITS: UnitType[] = [
     cost: 250,
     hp: 230,
     damage: 40,
-    speed: 1.8, // Reduced to be slower than Builder (2)
+    speed: 1.8, 
     range: 400,
     attackCooldown: 3500,
-    spawnCooldown: 8000,
+    spawnCooldown: 8000, // Unchanged
     unlockLevel: 0,
     description: 'A stylish unit with extra range that knocks enemies back.'
+  },
+  {
+    id: 'e_cake_thrower',
+    name: 'Cake Thrower',
+    icon: 'fas fa-birthday-cake',
+    cost: 200,
+    hp: 250,
+    damage: 20,
+    speed: 3, 
+    range: 250,
+    attackCooldown: 1000,
+    spawnCooldown: 8000,
+    unlockLevel: 0,
+    description: 'Carries a massive cake. Throws it once to stun enemies for 3s, then fights with bare hands.'
   },
   {
     id: 'e_boss_shotgunner',
     name: 'Shotgunner (BOSS)',
     icon: 'fas fa-skull',
-    cost: 9999, // Boss unit, not purchasable normally
-    hp: 6563, // Buffed 25% from 5250
-    damage: 210, // Buffed to one-shot Lvl 3 Baby Intern (150 * 1.4 = 210)
-    speed: 0.85,
-    range: 150,
+    cost: 9999,
+    hp: 6563, 
+    damage: 210, 
+    speed: 0.8, 
+    range: 200,
     attackCooldown: 2500,
-    spawnCooldown: 999999,
+    spawnCooldown: 60000, // Unchanged
     unlockLevel: 0,
-    description: 'The Exterminator. Wields a shotgun that shreds groups. Switches to an AK-47 when damaged.'
+    description: 'The Corporate Enforcer. Wields a shotgun and an attitude problem.'
   }
 ];

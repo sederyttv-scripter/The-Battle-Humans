@@ -35,7 +35,6 @@ import {
 } from './constants';
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
-import { GameAssistant } from './components/GameAssistant';
 
 // --- Storage Helpers (Cookies) ---
 
@@ -158,8 +157,10 @@ const BattlerVisual: React.FC<{
   lastAbilityTime?: number,
   isAltForm?: boolean,
   isAlmanac?: boolean,
-  hasThrownShotgun?: boolean
-}> = ({ typeId, isHeavy, isAttacking, hasHat, size = 'md', lastAbilityTime, isAltForm, isAlmanac, hasThrownShotgun }) => {
+  hasThrownShotgun?: boolean,
+  hasThrownCake?: boolean,
+  isStunned?: boolean
+}> = ({ typeId, isHeavy, isAttacking, hasHat, size = 'md', lastAbilityTime, isAltForm, isAlmanac, hasThrownShotgun, hasThrownCake, isStunned }) => {
   const scale = size === 'sm' ? 'scale-75' : size === 'lg' ? 'scale-125' : 'scale-100';
   const isAlly = typeId && !typeId.startsWith('e_');
   const now = Date.now();
@@ -183,18 +184,21 @@ const BattlerVisual: React.FC<{
   }
 
   const idleAnimationClass = useMemo(() => {
-    if (!isAlmanac) return '';
+    if (!isAlmanac && !isStunned) return '';
+    if (isStunned) return ''; // No idle anim when stunned
     switch(typeId) {
       case 'e_battler': return 'animate-idle-sway';
       case 'e_rage_battler': return 'animate-idle-aggressive';
       case 'e_double_puncher': return 'animate-idle-aggressive';
+      case 'e_fourth_puncher': return 'animate-idle-aggressive';
       case 'e_builder': return 'animate-idle-fidget';
       case 'e_pistoler': return 'animate-idle-breathing';
       case 'e_baller': return 'animate-idle-baller';
       case 'e_boss_shotgunner': return 'animate-idle-boss';
+      case 'e_cake_thrower': return 'animate-idle-sway';
       default: return 'animate-idle-gentle';
     }
-  }, [typeId, isAlmanac]);
+  }, [typeId, isAlmanac, isStunned]);
 
   const accessories = useMemo(() => {
     switch(typeId) {
@@ -221,7 +225,20 @@ const BattlerVisual: React.FC<{
         <div className={`absolute -right-3 top-1 w-2 h-11 ${isAltForm ? 'bg-zinc-900' : 'bg-gray-200'} border ${isAltForm ? 'border-zinc-700 shadow-[0_0_5px_black]' : 'border-gray-400'} rounded-t-full transition-transform origin-bottom ${isAttacking ? 'rotate-90' : 'rotate-12'}`}></div>
       );
       case 'pistoler':
-      case 'e_pistoler': return (
+      case 'e_pistoler': 
+        if (typeId === 'pistoler' && isAltForm) {
+            return (
+              <>
+                 <div className={`absolute -right-4 top-3 w-8 h-3 bg-zinc-900 rounded-sm border border-zinc-600 transition-transform ${isAttacking ? 'translate-x-1' : ''}`}>
+                    <div className="absolute top-1 left-2 w-1.5 h-3 bg-black/60 rounded-sm"></div>
+                 </div>
+                 {isAttacking && (
+                    <div className="absolute -right-8 top-2.5 w-6 h-4 bg-yellow-400/80 blur-[2px] rounded-full animate-pulse z-20"></div>
+                 )}
+              </>
+            );
+        }
+        return (
         <>
           <div className={`absolute -left-3 top-3 w-4 h-2 bg-zinc-800 rounded-sm shadow-sm transition-transform ${isAttacking ? 'translate-x-2' : ''}`}></div>
           <div className={`absolute -right-3 top-3 w-4 h-2 bg-zinc-800 rounded-sm shadow-sm transition-transform ${isAttacking ? '-translate-x-2' : ''}`}></div>
@@ -283,6 +300,31 @@ const BattlerVisual: React.FC<{
           </div>
         </div>
       );
+      case 'e_fourth_puncher': return (
+        <>
+          {/* Hat/Headgear to distinguish from Double Puncher */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-2 bg-slate-800 rounded-sm z-10 border border-slate-600"></div>
+          
+          {/* Back Arms - Positioned behind torso (-z-10) and tighter to body */}
+          <div className={`absolute top-2 left-0 w-2 h-8 bg-[#7f1d1d] border border-black/30 rounded-bl-full origin-top-right -z-10 transition-transform ${isAttacking ? '-rotate-[135deg] translate-x-1' : '-rotate-45'}`}></div>
+          <div className={`absolute top-2 right-0 w-2 h-8 bg-[#7f1d1d] border border-black/30 rounded-br-full origin-top-left -z-10 transition-transform ${isAttacking ? 'rotate-[135deg] -translate-x-1' : 'rotate-45'}`}></div>
+        </>
+      );
+      case 'e_cake_thrower': return (
+        <>
+           {/* Chef Hat */}
+           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-5 h-5 bg-white rounded-full border border-gray-200 z-10"></div>
+           <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-2 bg-white rounded-sm border-x border-gray-200 z-10"></div>
+           
+           {/* The Cake (Only if not thrown) */}
+           {!hasThrownCake && (
+             <div className={`absolute top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-pink-400 border-2 border-pink-600 rounded z-20 shadow-lg flex items-center justify-center transition-transform ${isAttacking ? 'scale-150 -translate-y-8 rotate-12 opacity-0 duration-500' : ''}`}>
+                <div className="w-6 h-6 bg-pink-300 rounded-sm border border-pink-400/50"></div>
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-2 bg-red-500 rounded-full"></div>
+             </div>
+           )}
+        </>
+      );
       case 'e_boss_shotgunner': return (
         <>
           <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-8 h-8 bg-black rounded-full border-2 border-slate-700 z-10 flex items-center justify-center">
@@ -304,17 +346,26 @@ const BattlerVisual: React.FC<{
       );
       default: return null;
     }
-  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun]);
+  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake]);
 
   return (
-    <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
+    <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' || typeId === 'e_fourth_puncher' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
+      {/* Stun Effect */}
+      {isStunned && (
+        <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-4 flex justify-center gap-1 z-30 animate-pulse">
+           <i className="fas fa-star text-yellow-400 text-xs animate-spin" style={{ animationDuration: '1s' }}></i>
+           <i className="fas fa-star text-yellow-400 text-sm animate-spin" style={{ animationDuration: '1.2s' }}></i>
+           <i className="fas fa-star text-yellow-400 text-xs animate-spin" style={{ animationDuration: '0.8s' }}></i>
+        </div>
+      )}
+      
       {accessories}
       {typeId !== 'e_rage_battler' && typeId !== 'e_boss_shotgunner' && (
         <>
           <div className="w-4 h-4 bg-yellow-400 rounded-sm mx-auto mb-[-1px] shadow-sm relative z-0"></div>
           <div className="flex items-center relative z-0">
             <div className={`w-2 h-6 bg-blue-600 rounded-l-sm transition-transform ${isAttacking ? 'translate-x-1' : ''}`}></div>
-            <div className={`w-6 h-7 ${isAltForm && typeId === 'sworder' ? 'bg-zinc-800' : typeId === 'e_baller' ? 'bg-purple-600' : isAlly ? 'bg-[#b91c1c]' : 'bg-[#dc2626]'} shadow-inner border-x border-black/10`}></div>
+            <div className={`w-6 h-7 ${isAltForm && typeId === 'sworder' ? 'bg-zinc-800' : typeId === 'e_baller' || typeId === 'e_cake_thrower' ? 'bg-purple-600' : isAlly ? 'bg-[#b91c1c]' : 'bg-[#dc2626]'} shadow-inner border-x border-black/10`}></div>
             <div className={`w-2 h-6 bg-blue-600 rounded-r-sm transition-transform ${isAttacking ? '-translate-x-2 scale-x-150' : ''}`}></div>
           </div>
           <div className="flex justify-center gap-1 mt-[-1px] relative z-0">
@@ -351,12 +402,33 @@ const Battlefield: React.FC<{
   const playerBasePercent = Math.max(0, Math.min(100, (playerBaseHp / maxBaseHp) * 100));
   const enemyBasePercent = Math.max(0, Math.min(100, (enemyBaseHp / maxBaseHp) * 100));
   const now = Date.now();
+  
+  // Custom Map Visuals
+  const getMapBackgroundClass = () => {
+    if (currentStage === 10) return "bg-[#1a0505]"; // Hellish corporate
+    if (currentStage >= 11) return "bg-[#021815]"; // Matrix/Server room
+    return "bg-slate-900";
+  };
+  
+  const getMapOverlay = () => {
+      if (currentStage === 10) return <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(153,27,27,0.15)_0%,_transparent_80%)] pointer-events-none"></div>;
+      if (currentStage >= 11) return (
+        <>
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,100,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,100,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/50 to-transparent pointer-events-none"></div>
+        </>
+      );
+      return (
+        <>
+            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,_rgba(59,130,246,0.1)_0%,_transparent_70%)]"></div>
+            <div className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+        </>
+      );
+  };
 
   return (
-    <div className={`relative w-full h-full min-h-[400px] bg-slate-900 border-b-4 border-slate-950 overflow-hidden shadow-inner transition-colors duration-300 ${cannonEffect ? 'bg-red-900/20' : ''}`}>
-      {/* Background Visuals */}
-      <div className="absolute inset-0 opacity-20 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,_rgba(59,130,246,0.1)_0%,_transparent_70%)]"></div>
-      <div className="absolute bottom-0 w-full h-1/3 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+    <div className={`relative w-full h-full min-h-[400px] ${getMapBackgroundClass()} border-b-4 border-slate-950 overflow-hidden shadow-inner transition-colors duration-300 ${cannonEffect ? 'bg-red-900/20' : ''}`}>
+      {getMapOverlay()}
 
       {cannonEffect && (
         <div className="absolute inset-0 bg-white/30 z-40 cannon-blast flex items-center justify-center pointer-events-none">
@@ -402,11 +474,10 @@ const Battlefield: React.FC<{
         const level = u.side === 'player' ? (unitLevels[u.typeId] || 1) : 1;
         
         let enemyScaling = 1.0;
-        if (u.side === 'enemy' && u.typeId === 'e_battler' && currentStage === 1) {
-          enemyScaling = 0.75;
-        }
-        if (u.side === 'enemy' && currentStage === 9) {
-          enemyScaling = 0.98;
+        if (u.side === 'enemy') {
+            if (u.typeId === 'e_battler' && currentStage === 1) enemyScaling = 0.75;
+            if (currentStage === 9) enemyScaling = 0.98;
+            if (currentStage >= 11) enemyScaling = 1.05; // 5% Boost for Stage 11+
         }
         
         const isAlt = u.side === 'player' && level >= 10 && !!type.altForm && u.isAltForm;
@@ -419,6 +490,7 @@ const Battlefield: React.FC<{
         
         // Boss Scale
         const isBoss = u.typeId === 'e_boss_shotgunner';
+        const isStunned = (u.stunnedUntil || 0) > now;
 
         return (
           <div key={u.instanceId} className={`absolute bottom-20 md:bottom-24 flex flex-col items-center transition-all duration-100 ease-linear z-20 ${isAttacking ? 'recoil' : ''} ${isBoss ? 'z-30' : ''}`} style={{ left: `${pos}%`, transform: `translateX(-50%) ${u.side === 'enemy' ? 'scaleX(-1)' : ''} ${isBoss ? 'scale(1.5)' : ''}` }}>
@@ -429,6 +501,7 @@ const Battlefield: React.FC<{
                   type.id === 'sworder' || type.id === 'e_pistoler' || type.id === 'pistoler' || type.id === 'e_rage_battler' ? 'fas fa-shield-slash text-white' : 
                   type.id === 'e_baller' ? 'fas fa-circle' :
                   type.id === 'e_boss_shotgunner' ? 'fas fa-skull text-red-600' :
+                  type.id === 'e_cake_thrower' ? 'fas fa-birthday-cake text-pink-500' :
                   'fas fa-bolt text-yellow-400'
                 }></i>
               </div>
@@ -440,7 +513,7 @@ const Battlefield: React.FC<{
             </div>
             
             {/* Unit */}
-            <div className={`filter drop-shadow-lg ${u.typeId !== 'e_wall' && !isBoss ? 'animate-bounce' : ''}`} style={{ animationDuration: `${0.8 / (type.speed || 1)}s` }}>
+            <div className={`filter drop-shadow-lg ${u.typeId !== 'e_wall' && !isBoss && !isStunned ? 'animate-bounce' : ''}`} style={{ animationDuration: `${0.8 / (type.speed || 1)}s` }}>
               <BattlerVisual 
                 typeId={u.typeId} 
                 isHeavy={type.icon?.includes('heavy')} 
@@ -449,6 +522,8 @@ const Battlefield: React.FC<{
                 lastAbilityTime={u.lastAbilityTime}
                 isAltForm={u.isAltForm}
                 hasThrownShotgun={u.hasThrownShotgun}
+                hasThrownCake={u.hasThrownCake}
+                isStunned={isStunned}
               />
             </div>
           </div>
@@ -511,32 +586,38 @@ export default function App() {
 
     const savedLevel = getCookie('bh_level');
     const savedXP = getCookie('bh_xp');
-    const savedCoins = getCookie('bh_coins');
+    // const savedCoins = getCookie('bh_coins'); // OVERRIDE FOR TESTING
     const savedUnitLevels = getCookie('bh_unit_levels');
     const savedPreferredForms = getCookie('bh_preferred_forms');
     const savedLoadout = getCookie('bh_loadout');
-    const savedStages = getCookie('bh_stages');
+    // const savedStages = getCookie('bh_stages'); // OVERRIDE FOR TESTING
     const savedCannonLevel = getCookie('bh_cannon_level');
     const savedBankLevel = getCookie('bh_bank_level');
     const savedStartingBudgetLevel = getCookie('bh_starting_budget_level');
     
+    // FOR TESTING: Create a map with all player units at Level 35
+    const testingUnitLevels = PLAYER_UNITS.reduce((acc, unit) => {
+        acc[unit.id] = 35;
+        return acc;
+    }, {} as Record<string, number>);
+
     return {
       screen: 'menu',
       money: INITIAL_MONEY,
-      coins: savedCoins ? parseInt(savedCoins) : 0, 
+      coins: 999999999999999999, // FOR TESTING: Infinite Savings
       walletLevel: 0,
       playerBaseHp: 500,
       enemyBaseHp: 500,
       units: [],
       isGameOver: false,
       winner: null,
-      battleLog: ["System initialized."],
+      battleLog: ["System initialized. TESTING MODE ACTIVE (Lvl 35 Allies)."],
       playerLevel: savedLevel ? parseInt(savedLevel) : 1,
       playerXP: savedXP ? parseInt(savedXP) : 0,
-      unitLevels: savedUnitLevels ? JSON.parse(savedUnitLevels) : { 'baby': 1 },
+      unitLevels: testingUnitLevels, // FOR TESTING: All units level 35 override
       preferredForms: savedPreferredForms ? JSON.parse(savedPreferredForms) : {},
       loadout: savedLoadout ? JSON.parse(savedLoadout) : ['baby'],
-      unlockedStages: savedStages ? JSON.parse(savedStages) : [1],
+      unlockedStages: STAGE_CONFIG.map(s => s.id), // FOR TESTING: Unlock All Stages
       currentStage: 1,
       cannonLevel: savedCannonLevel ? parseInt(savedCannonLevel) : 1,
       bankLevel: savedBankLevel ? parseInt(savedBankLevel) : 1,
@@ -563,8 +644,13 @@ export default function App() {
   // --- Theme Music Controller ---
   useEffect(() => {
     if (gameState.screen === 'battle' && !gameState.isGameOver) {
-      // Play boss theme if Stage 10
-      sounds.startBattleTheme(gameState.currentStage === 10);
+      if (gameState.currentStage === 10) {
+        sounds.startBattleTheme('boss');
+      } else if (gameState.currentStage >= 11) {
+        sounds.startBattleTheme('electronic');
+      } else {
+        sounds.startBattleTheme('normal');
+      }
     } else {
       sounds.stopBattleTheme();
     }
@@ -596,7 +682,10 @@ export default function App() {
   const nextInstanceId = useRef(0);
   const lastUpdateRef = useRef(Date.now());
   const enemyMoneyRef = useRef(INITIAL_MONEY);
-  const enemyCooldownsRef = useRef<Record<string, number>>({ 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0 });
+  const enemyCooldownsRef = useRef<Record<string, number>>({ 
+      'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 
+      'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0
+  });
   const battleStartTimeRef = useRef(0);
 
   const deployUnit = useCallback((side: Side, typeId: string, spawnX?: number) => {
@@ -632,13 +721,10 @@ export default function App() {
     } else {
       setGameState(prev => {
         let hpScaling = 1.0;
-        if (typeId === 'e_battler' && prev.currentStage === 1) {
-          hpScaling = 0.75;
-        }
-        if (prev.currentStage === 9) {
-          hpScaling = 0.98;
-        }
-        
+        if (typeId === 'e_battler' && prev.currentStage === 1) hpScaling = 0.75;
+        if (prev.currentStage === 9) hpScaling = 0.98;
+        if (prev.currentStage >= 11) hpScaling = 1.05; // 5% Boost for World 2
+
         return {
           ...prev,
           units: [...prev.units, {
@@ -725,7 +811,7 @@ export default function App() {
     setUnitLastSpawnTimes({});
     battleStartTimeRef.current = Date.now();
     enemyMoneyRef.current = INITIAL_MONEY;
-    enemyCooldownsRef.current = { 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0 };
+    enemyCooldownsRef.current = { 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0 };
     setShowSandboxPanel(isSandbox); // Auto open panel in sandbox
     setBossSpawned(false);
   }, []);
@@ -813,8 +899,36 @@ export default function App() {
         
         // --- SPAWN LOGIC START ---
         if (timeElapsed > 5000 && !prev.sandboxPaused) {
+          // STAGE 13 LOGIC: Cake Thrower
+          if (prev.currentStage === 13) {
+             if (enemyCooldownsRef.current['e_cake_thrower'] === 0 && enemyMoneyRef.current >= 200) {
+                 unitToSpawn = 'e_cake_thrower'; enemyCooldownsRef.current['e_cake_thrower'] = 8000;
+             } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
+                 unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 2500;
+             } else if (enemyCooldownsRef.current['e_pistoler'] === 0 && enemyMoneyRef.current >= 200) {
+                 unitToSpawn = 'e_pistoler'; enemyCooldownsRef.current['e_pistoler'] = 6000;
+             }
+          }
+          // STAGE 12 LOGIC: Puncher Bros
+          else if (prev.currentStage === 12) {
+             if (enemyCooldownsRef.current['e_fourth_puncher'] === 0 && enemyMoneyRef.current >= 350) {
+                 unitToSpawn = 'e_fourth_puncher'; enemyCooldownsRef.current['e_fourth_puncher'] = 9000;
+             } else if (enemyCooldownsRef.current['e_double_puncher'] === 0 && enemyMoneyRef.current >= 150) {
+                 unitToSpawn = 'e_double_puncher'; enemyCooldownsRef.current['e_double_puncher'] = 4000;
+             } else if (enemyCooldownsRef.current['e_builder'] === 0 && enemyMoneyRef.current >= 300) {
+                 unitToSpawn = 'e_builder'; enemyCooldownsRef.current['e_builder'] = 15000;
+             }
+          }
+          // STAGE 11 LOGIC: Fourth Puncher Debut
+          else if (prev.currentStage === 11) {
+             if (enemyCooldownsRef.current['e_fourth_puncher'] === 0 && enemyMoneyRef.current >= 350) {
+                 unitToSpawn = 'e_fourth_puncher'; enemyCooldownsRef.current['e_fourth_puncher'] = 12000;
+             } else if (enemyCooldownsRef.current['e_battler'] === 0 && enemyMoneyRef.current >= 80) {
+                 unitToSpawn = 'e_battler'; enemyCooldownsRef.current['e_battler'] = 2500;
+             }
+          }
           // STAGE 10 LOGIC: No Mercy (Boss Stage)
-          if (prev.currentStage === 10) {
+          else if (prev.currentStage === 10) {
               if (!bossSpawned && timeElapsed > 2000) {
                  // Summon Boss immediately after "shield" (start delay)
                  unitToSpawn = 'e_boss_shotgunner';
@@ -966,7 +1080,10 @@ export default function App() {
           }
 
           if (unitToSpawn) {
-            enemyMoneyRef.current -= ENEMY_UNITS.find(e => e.id === unitToSpawn)!.cost;
+            // BOSS SPAWN FIX: Don't deduct cost for Boss in Stage 10 to allow it to spawn support
+            if (unitToSpawn !== 'e_boss_shotgunner') {
+                enemyMoneyRef.current -= ENEMY_UNITS.find(e => e.id === unitToSpawn)!.cost;
+            }
             setTimeout(() => deployUnit('enemy', unitToSpawn), 0);
           }
         }
@@ -976,6 +1093,11 @@ export default function App() {
         let pDmg = 0; let eDmg = 0;
         const pendingUnits: ActiveUnit[] = [];
         for (let u of newUnits) {
+          // --- STUN LOGIC ---
+          if (u.stunnedUntil && u.stunnedUntil > now) {
+            continue; // Skip movement and attack if stunned
+          }
+
           const type = (u.side === 'player' ? PLAYER_UNITS : ENEMY_UNITS).find(t => t.id === u.typeId)!;
           const level = u.side === 'player' ? (prev.unitLevels[u.typeId] || 1) : 1;
           const isAlt = u.side === 'player' && level >= 10 && !!type.altForm && u.isAltForm;
@@ -1026,12 +1148,12 @@ export default function App() {
              if (u.currentHp < 5000 && !u.hasThrownShotgun) {
                 u.hasThrownShotgun = true;
                 // AK-47 Mode speed
-                effectiveAttackCooldown = 250; 
+                effectiveAttackCooldown = 100; // Buffed to 0.1s
                 u.lastAttackTime = now; // Reset timer for new phase
              } 
              // Phase 2: AK-47
              else if (u.hasThrownShotgun) {
-                effectiveAttackCooldown = 250;
+                effectiveAttackCooldown = 100; // Buffed to 0.1s
              }
              // Phase 1: Shotgun (default)
              else {
@@ -1041,11 +1163,10 @@ export default function App() {
           // --- BOSS LOGIC END ---
 
           let enemyDamageScaling = 1.0;
-          if (u.side === 'enemy' && u.typeId === 'e_battler' && prev.currentStage === 1) {
-            enemyDamageScaling = 0.75;
-          }
-          if (u.side === 'enemy' && prev.currentStage === 9) {
-             enemyDamageScaling = 0.98;
+          if (u.side === 'enemy') {
+              if (u.typeId === 'e_battler' && prev.currentStage === 1) enemyDamageScaling = 0.75;
+              if (prev.currentStage === 9) enemyDamageScaling = 0.98;
+              if (prev.currentStage >= 11) enemyDamageScaling = 1.05; // 5% Boost
           }
           
           const actualDmg = stats.damage * (u.side === 'player' ? (1 + (level - 1) * STAT_GAIN_PER_LEVEL) : enemyDamageScaling);
@@ -1053,7 +1174,13 @@ export default function App() {
           
           const distToBase = u.side === 'player' ? FIELD_WIDTH - u.x : u.x;
           
-          const possibleTargets = newUnits.filter(other => other.side !== u.side && Math.abs(u.x - other.x) <= stats.range);
+          // Effective Range Logic for Cake Thrower
+          let effectiveRange = stats.range;
+          if (u.typeId === 'e_cake_thrower' && u.hasThrownCake) {
+             effectiveRange = 40; // Reverts to melee range after throwing
+          }
+
+          const possibleTargets = newUnits.filter(other => other.side !== u.side && Math.abs(u.x - other.x) <= effectiveRange);
           
           let target: ActiveUnit | undefined;
           
@@ -1091,9 +1218,17 @@ export default function App() {
                   }
                   // Phase 2: AK-47 (Single target, fast, lower damage)
                   else {
-                      target.currentHp -= 31; // Buffed AK damage (25 -> 31)
+                      target.currentHp -= 37; // Buffed AK damage (was 31)
                   }
-              } else {
+              } 
+              // --- CAKE THROWER LOGIC ---
+              else if (u.typeId === 'e_cake_thrower' && !u.hasThrownCake) {
+                  u.hasThrownCake = true;
+                  target.currentHp -= actualDmg;
+                  target.stunnedUntil = now + 3000; // 3s Stun
+                  sounds.playBaseHit(); // Heavy impact
+              }
+              else {
                   // Standard Unit Attack
                   target.currentHp -= actualDmg;
               }
@@ -1111,7 +1246,7 @@ export default function App() {
                 pendingUnits.push({ instanceId: nextInstanceId.current++, typeId: 'e_wall', side: 'enemy', x: Math.max(0, u.x - 35), currentHp: wallType.hp, lastAttackTime: 0, lastAbilityTime: 0 });
               }
             }
-          } else if (distToBase <= stats.range) {
+          } else if (distToBase <= effectiveRange) {
             if (now - u.lastAttackTime > effectiveAttackCooldown) {
               u.lastAttackTime = now; 
               if (u.side === 'player') {
@@ -1122,10 +1257,8 @@ export default function App() {
               } else {
                 // Boss Base Damage Logic
                 if (u.typeId === 'e_boss_shotgunner' && u.hasThrownShotgun) {
-                    pDmg += 31; // AK Base Damage
+                    pDmg += 37; // AK Base Damage
                 } else if (u.typeId === 'e_boss_shotgunner' && !u.hasThrownShotgun) {
-                    // Update Shotgun base damage to be 2x the new massive unit damage
-                    // This ensures it stays threatening (210 * 2 = 420) without being 1-shot (1260)
                     pDmg += actualDmg * 2; 
                 } else {
                     pDmg += actualDmg;
@@ -1568,7 +1701,7 @@ export default function App() {
                     
                     <div className="bg-slate-900/80 backdrop-blur px-6 py-2 rounded-xl border border-white/10 shadow-lg flex flex-col items-center">
                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Current Objective</span>
-                         <span className="text-lg font-black italic text-white">{gameState.currentStage === 7 ? "BALLER'S RISE" : gameState.currentStage === 8 ? "BULLET HELL" : gameState.currentStage === 9 ? "NINE OF A KINDS" : gameState.currentStage === 10 ? "NO MERCY!" : `STAGE 0${gameState.currentStage}`}</span>
+                         <span className="text-lg font-black italic text-white">{STAGE_CONFIG.find(s => s.id === gameState.currentStage)?.name.toUpperCase() || `STAGE 0${gameState.currentStage}`}</span>
                     </div>
 
                     <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 shadow-lg flex flex-col items-end pointer-events-auto">
@@ -1781,6 +1914,5 @@ export default function App() {
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
       {renderScreen()}
-      <GameAssistant gameState={gameState} />
   </div>;
 }
