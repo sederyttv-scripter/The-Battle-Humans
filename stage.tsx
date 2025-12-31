@@ -103,8 +103,72 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return enemyCooldowns[unitId] === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 14: Stunlocking (Builder, Baller, Battler, Cake Thrower)
+  if (stageId === 14) {
+    // Early game pressure with Battlers
+    if (timeElapsed < 20000) {
+      if (canSpawn('e_battler')) {
+        return { unitId: 'e_battler', cooldown: 2000 };
+      } else if (canSpawn('e_baller')) {
+        return { unitId: 'e_baller', cooldown: 8000 };
+      }
+    }
+    
+    // Count current units for strategic spawning
+    const enemiesOnField = units.filter(u => u.side === 'enemy');
+    const builders = enemiesOnField.filter(u => u.typeId === 'e_builder').length;
+    const cakeThrowers = enemiesOnField.filter(u => u.typeId === 'e_cake_thrower').length;
+    const ballers = enemiesOnField.filter(u => u.typeId === 'e_baller').length;
+    const frontliners = enemiesOnField.filter(u => 
+      ['e_battler', 'e_double_puncher', 'e_rage_battler', 'e_wall'].includes(u.typeId)
+    ).length;
+    
+    // Priority 1: Always have at least 1 Builder for economy
+    if (builders === 0 && canSpawn('e_builder')) {
+      return { unitId: 'e_builder', cooldown: 12000 };
+    }
+    
+    // Priority 2: Cake Thrower for heavy stun/area control
+    if (cakeThrowers < 2 && canSpawn('e_cake_thrower')) {
+      // Reduce cost for Cake Thrower to make it more spammable in this stage
+      if (canSpawn('e_cake_thrower', 600)) { // Reduced from likely higher cost
+        return { unitId: 'e_cake_thrower', cooldown: 15000 };
+      }
+    }
+    
+    // Priority 3: Maintain front line with Battlers
+    if (frontliners < 3) {
+      const meatshields = ['e_battler', 'e_rage_battler'];
+      const available = meatshields.filter(id => canSpawn(id));
+      if (available.length > 0) {
+        const pick = available[Math.floor(Math.random() * available.length)];
+        const u = ENEMY_UNITS.find(e => e.id === pick)!;
+        return { unitId: pick, cooldown: u.spawnCooldown || 3000 };
+      }
+    }
+    
+    // Priority 4: Baller for range pressure
+    if (ballers < 2 && canSpawn('e_baller')) {
+      return { unitId: 'e_baller', cooldown: 6000 };
+    }
+    
+    // Priority 5: Additional Builder if rich
+    if (builders < 2 && enemyMoney > 1200 && canSpawn('e_builder')) {
+      return { unitId: 'e_builder', cooldown: 20000 };
+    }
+    
+    // Priority 6: Spam whatever we can afford
+    const availableUnits = ['e_battler', 'e_baller', 'e_builder', 'e_cake_thrower']
+      .filter(id => canSpawn(id));
+    
+    if (availableUnits.length > 0) {
+      const pick = availableUnits[Math.floor(Math.random() * availableUnits.length)];
+      const u = ENEMY_UNITS.find(e => e.id === pick)!;
+      return { unitId: pick, cooldown: u.spawnCooldown || 5000 };
+    }
+  }
   // STAGE 13: Cake Thrower
-  if (stageId === 13) {
+  else if (stageId === 13) {
      if (canSpawn('e_cake_thrower')) {
          return { unitId: 'e_cake_thrower', cooldown: 8000 };
      } else if (canSpawn('e_battler')) {
