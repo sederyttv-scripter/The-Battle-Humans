@@ -53,6 +53,7 @@ export const STAGE_CONFIG = [
   { id: 11, name: "Fourth Puncher", subtitle: "Productivity Hack", icon: "fas fa-hands", color: "from-emerald-800 to-black" },
   { id: 12, name: "Puncher Bros", subtitle: "Synergy Strike Team", icon: "fas fa-handshake", color: "from-cyan-800 to-blue-950" },
   { id: 13, name: "Cake Thrower", subtitle: "Sweet Surprise", icon: "fas fa-birthday-cake", color: "from-pink-600 to-purple-900" },
+   { id: 14, name: "Stunlocking", subtitle: "Builder, Baller, Battler & Cake Thrower", icon: "fas fa-bolt", color: "from-purple-900/80 to-pink-700/80" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
