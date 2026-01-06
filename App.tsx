@@ -27,6 +27,7 @@ import {
   BANK_INCOME_GAIN_PER_LEVEL, 
   REWARD_PER_STAGE, 
   FIRST_CLEAR_MULTIPLIER, 
+  BOSS_CLEAR_MULTIPLIER,
   GAME_VERSION, 
   STARTING_BUDGET_GAIN_PER_LEVEL, 
   STARTING_BUDGET_UPGRADE_BASE_COST, 
@@ -36,6 +37,7 @@ import {
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
 import { StageSelectionScreen, evaluateStageSpawns } from './stage';
+import { GameAssistant } from './components/GameAssistant';
 
 // --- Storage Helpers (Cookies) ---
 
@@ -598,7 +600,7 @@ export default function App() {
     return {
       screen: 'menu',
       money: INITIAL_MONEY,
-      coins: 999999999999999999, // FOR TESTING: Infinite Savings
+      coins: 9999999999999999, // FOR TESTING: 9 Quadrillion (ish)
       walletLevel: 0,
       playerBaseHp: 500,
       enemyBaseHp: 500,
@@ -1120,9 +1122,13 @@ export default function App() {
           if (!prev.sandboxMode) {
              xp += XP_PER_WIN; if (xp >= XP_TO_LEVEL(plvl)) { xp -= XP_TO_LEVEL(plvl); plvl++; }
              const isFirst = !prev.unlockedStages.includes(prev.currentStage + 1);
-             const reward = Math.floor(prev.currentStage * REWARD_PER_STAGE * (isFirst ? FIRST_CLEAR_MULTIPLIER : 1));
+             
+             // Balanced Reward Logic
+             const stageInfo = STAGE_CONFIG.find(s => s.id === prev.currentStage);
+             const multiplier = isFirst ? (stageInfo?.isBoss ? BOSS_CLEAR_MULTIPLIER : FIRST_CLEAR_MULTIPLIER) : 1;
+             const reward = Math.floor(prev.currentStage * REWARD_PER_STAGE * multiplier);
+             
              newCoins += reward; setLastWinReward({ coins: reward, isFirst });
-             // Fix: Remove the 8 cap to allow unlocking "9" (which is just beating 8)
              if (!stages.includes(prev.currentStage + 1)) stages.push(prev.currentStage + 1);
           } else {
              setLastWinReward({ coins: 0, isFirst: false });
@@ -1604,6 +1610,9 @@ export default function App() {
                     ))}
                 </div>
 
+                {/* Game Assistant */}
+                <GameAssistant gameState={gameState} />
+
                 {/* Game Over Screen */}
                 {gameState.isGameOver && (
                     <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in zoom-in duration-300">
@@ -1622,7 +1631,7 @@ export default function App() {
                                 <div className="bg-slate-950 rounded-xl p-4 w-full mb-8 border border-white/5">
                                     <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Performance Bonus</div>
                                     <div className="flex items-center justify-center gap-2 text-3xl font-mono text-yellow-400 font-black tracking-tighter">
-                                        <i className="fas fa-coins text-xl"></i> +{lastWinReward.coins}
+                                        <i className="fas fa-coins text-xl"></i> +{lastWinReward.coins.toLocaleString()}
                                     </div>
                                     {lastWinReward.isFirst && <div className="text-[10px] text-green-400 font-bold mt-2 uppercase tracking-widest bg-green-900/20 py-1 px-3 rounded-full inline-block">First Clear Bonus</div>}
                                 </div>

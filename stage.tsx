@@ -103,8 +103,24 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return enemyCooldowns[unitId] === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 15: All Hands Meeting
+  if (stageId === 15) {
+     if (canSpawn('e_fourth_puncher')) {
+         return { unitId: 'e_fourth_puncher', cooldown: 18000 };
+     } else if (canSpawn('e_cake_thrower')) {
+         return { unitId: 'e_cake_thrower', cooldown: 12000 };
+     } else if (canSpawn('e_baller')) {
+         return { unitId: 'e_baller', cooldown: 10000 };
+     } else if (canSpawn('e_builder')) {
+         return { unitId: 'e_builder', cooldown: 20000 };
+     } else if (canSpawn('e_double_puncher')) {
+         return { unitId: 'e_double_puncher', cooldown: 6000 };
+     } else if (canSpawn('e_pistoler')) {
+         return { unitId: 'e_pistoler', cooldown: 7000 };
+     }
+  }
   // STAGE 14: Stunlocking
-  if (stageId === 14) {
+  else if (stageId === 14) {
      if (canSpawn('e_cake_thrower')) {
          return { unitId: 'e_cake_thrower', cooldown: 9000 };
      } else if (canSpawn('e_baller')) {
