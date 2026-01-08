@@ -100,23 +100,25 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     const unit = ENEMY_UNITS.find(u => u.id === unitId);
     if (!unit) return false;
     const cost = costOverride ?? unit.cost;
-    return enemyCooldowns[unitId] === 0 && enemyMoney >= cost;
+    return (enemyCooldowns[unitId] || 0) === 0 && enemyMoney >= cost;
   };
 
-  // STAGE 15: All Hands Meeting
+  // STAGE 15: Alley Ambush
   if (stageId === 15) {
-     if (canSpawn('e_fourth_puncher')) {
-         return { unitId: 'e_fourth_puncher', cooldown: 18000 };
-     } else if (canSpawn('e_cake_thrower')) {
-         return { unitId: 'e_cake_thrower', cooldown: 12000 };
-     } else if (canSpawn('e_baller')) {
-         return { unitId: 'e_baller', cooldown: 10000 };
-     } else if (canSpawn('e_builder')) {
-         return { unitId: 'e_builder', cooldown: 20000 };
-     } else if (canSpawn('e_double_puncher')) {
-         return { unitId: 'e_double_puncher', cooldown: 6000 };
+     // Initial Rush of Battlers to soak damage
+     if (timeElapsed < 20000) {
+        if (canSpawn('e_battler')) {
+             return { unitId: 'e_battler', cooldown: 2000 };
+        }
+     }
+     
+     // Mixed Waves: Enforcer push with Pistoler support
+     if (canSpawn('e_enforcer')) {
+         return { unitId: 'e_enforcer', cooldown: 10000 };
      } else if (canSpawn('e_pistoler')) {
-         return { unitId: 'e_pistoler', cooldown: 7000 };
+         return { unitId: 'e_pistoler', cooldown: 8000 };
+     } else if (canSpawn('e_battler')) {
+         return { unitId: 'e_battler', cooldown: 2500 };
      }
   }
   // STAGE 14: Stunlocking

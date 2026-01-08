@@ -32,7 +32,9 @@ import {
   STARTING_BUDGET_GAIN_PER_LEVEL, 
   STARTING_BUDGET_UPGRADE_BASE_COST, 
   STARTING_BUDGET_UPGRADE_COST_MULTIPLIER,
-  STAGE_CONFIG
+  STAGE_CONFIG,
+  BOSS_STAGE_IDS,
+  GACHA_COST
 } from './constants';
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
@@ -65,8 +67,8 @@ const deleteCookie = (name: string) => {
 
 const clearAllGameData = () => {
   const keys = [
-    'bh_level', 'bh_xp', 'bh_coins', 'bh_unit_levels', 
-    'bh_preferred_forms', 'bh_loadout', 'bh_stages', 
+    'bh_level', 'bh_xp', 'bh_coins', 'bh_diamonds', 'bh_unit_levels', 
+    'bh_preferred_forms', 'bh_loadout', 'bh_stages', 'bh_boss_claims',
     'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_version'
   ];
   keys.forEach(deleteCookie);
@@ -102,6 +104,7 @@ const BattlerVisual: React.FC<{
   const isConstructing = typeId === 'e_builder' && lastAbilityTime && (now - lastAbilityTime < 1500);
   const isSlamming = typeId === 'e_boss_shotgunner' && lastAbilityTime && (now - lastAbilityTime < 1000);
   const isThrowingCake = typeId === 'e_cake_thrower' && lastAbilityTime && (now - lastAbilityTime < 600);
+  const isThrowingCola = typeId === 'cola_thrower' && isAttacking;
   
   if (typeId === 'e_wall') {
     return (
@@ -131,9 +134,65 @@ const BattlerVisual: React.FC<{
       case 'e_baller': return 'animate-idle-baller';
       case 'e_boss_shotgunner': return 'animate-idle-boss';
       case 'e_cake_thrower': return 'animate-idle-sway';
+      case 'e_enforcer': return 'animate-idle-aggressive';
+      case 'cola_thrower': return 'animate-idle-fidget';
+      case 'retro_battler': return 'animate-step-jump'; // New Retro animation
       default: return 'animate-idle-gentle';
     }
   }, [typeId, isAlmanac, isStunned]);
+
+  // Special Rendering for Retro Battler (8-bit)
+  if (typeId === 'retro_battler') {
+      const isGunner = isAltForm;
+      return (
+        <div className={`relative transition-transform duration-100 ${scale} ${isAttacking ? 'animate-vibrate' : idleAnimationClass}`}>
+            {isStunned && (
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-4 flex justify-center gap-1 z-30">
+                   <div className="w-2 h-2 bg-yellow-400 animate-spin"></div>
+                   <div className="w-2 h-2 bg-yellow-400 animate-spin delay-75"></div>
+                </div>
+            )}
+            
+            <div className="flex flex-col items-center">
+                {/* 8-bit Head */}
+                <div className="w-6 h-6 bg-[#fccb95] border-4 border-black relative z-10 box-border">
+                   {isGunner && <div className="absolute top-1 left-0 w-full h-2 bg-black opacity-80"></div>} {/* Sunglasses */}
+                   {!isGunner && (
+                       <>
+                           <div className="absolute top-2 left-1 w-1 h-1 bg-black"></div>
+                           <div className="absolute top-2 right-1 w-1 h-1 bg-black"></div>
+                       </>
+                   )}
+                </div>
+                {/* 8-bit Torso */}
+                <div className={`w-6 h-5 ${isGunner ? 'bg-purple-600' : 'bg-green-600'} border-x-4 border-black relative box-border`}>
+                   {/* Belt */}
+                   <div className="absolute bottom-0 w-full h-1 bg-black/50"></div>
+                </div>
+                {/* 8-bit Legs */}
+                <div className="flex gap-1">
+                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
+                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
+                </div>
+            </div>
+
+            {/* Weapons */}
+            {isGunner ? (
+                // Pixel Gun
+                <div className={`absolute top-4 -right-5 w-6 h-3 bg-gray-400 border-2 border-black origin-left ${isAttacking ? 'translate-x-1' : ''}`}>
+                    <div className="absolute -top-1 right-0 w-1 h-2 bg-black"></div>
+                    {isAttacking && <div className="absolute right-[-4px] top-0 w-2 h-2 bg-yellow-400"></div>}
+                </div>
+            ) : (
+                // Pixel Sword
+                <div className={`absolute top-2 -right-5 w-2 h-8 bg-gray-300 border-2 border-black origin-bottom transition-transform ${isAttacking ? 'rotate-90' : 'rotate-12'}`}>
+                   <div className="absolute top-0 -left-1 w-4 h-1 bg-gray-300 border-2 border-black"></div>
+                   <div className="absolute bottom-0 left-0 w-full h-2 bg-amber-800"></div>
+                </div>
+            )}
+        </div>
+      );
+  }
 
   const accessories = useMemo(() => {
     switch(typeId) {
@@ -185,6 +244,32 @@ const BattlerVisual: React.FC<{
           )}
         </>
       );
+      case 'cola_thrower':
+        if (isAltForm) {
+            // Cola Spray: Backpack with hose
+            return (
+                <>
+                   <div className="absolute top-1 -left-3 w-4 h-6 bg-red-800 rounded-sm border border-red-600 -z-10"></div>
+                   <div className={`absolute top-3 -right-4 w-8 h-2 bg-black rounded-full origin-left ${isAttacking ? 'animate-vibrate' : ''}`}>
+                      <div className="absolute right-0 top-0 w-1 h-2 bg-gray-400"></div>
+                      {isAttacking && (
+                          <div className="absolute right-0 top-[-4px] w-6 h-4 bg-red-500/50 blur-sm animate-pulse rounded-full"></div>
+                      )}
+                   </div>
+                </>
+            );
+        }
+        // Base Form: Throwing Bottle
+        return (
+            <>
+               <div className={`absolute top-0 -right-2 w-3 h-8 bg-red-900/80 rounded-sm border border-red-500 transition-transform duration-500 ${isAttacking ? 'translate-x-6 -translate-y-4 rotate-[360deg] opacity-0' : 'rotate-12'}`}>
+                  <div className="absolute top-1 left-0 right-0 h-2 bg-white/50"></div>
+               </div>
+               {isAttacking && (
+                  <div className="absolute top-0 right-4 w-4 h-10 bg-red-600 rounded-full animate-spin z-20 blur-[1px]"></div>
+               )}
+            </>
+        );
       case 'e_baller': return (
         <>
            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-1.5 bg-purple-600 rounded-full z-10 shadow-sm"></div>
@@ -287,6 +372,22 @@ const BattlerVisual: React.FC<{
           <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-slate-800/50 rounded-full border border-white/10 -z-10"></div>
         </>
       );
+      case 'e_enforcer': return (
+        <>
+           {/* Hood/Head */}
+           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-zinc-800 rounded-full z-10 shadow-sm"></div>
+           <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-2 bg-black/80 z-20 skew-y-6"></div> {/* Bandana Mask */}
+           
+           {/* Jacket Body */}
+           <div className="absolute top-1 left-1/2 -translate-x-1/2 w-7 h-7 bg-zinc-900 rounded-t-md z-0 border-x border-zinc-700"></div>
+           
+           {/* Chain */}
+           <div className="absolute top-6 left-1/2 -translate-x-1/2 w-6 h-4 border-b-2 border-dashed border-gray-400 rounded-full"></div>
+
+           {/* Weapon: Pipe */}
+           <div className={`absolute top-2 -right-4 w-10 h-1.5 bg-gray-400 border border-gray-600 rounded-full origin-left transition-transform ${isAttacking ? 'rotate-[-20deg] translate-y-4' : '-rotate-[100deg]'}`}></div>
+        </>
+      );
       default: return null;
     }
   }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake, isThrowingCake]);
@@ -308,7 +409,7 @@ const BattlerVisual: React.FC<{
           <div className="w-4 h-4 bg-yellow-400 rounded-sm mx-auto mb-[-1px] shadow-sm relative z-0"></div>
           <div className="flex items-center relative z-0">
             <div className={`w-2 h-6 bg-blue-600 rounded-l-sm transition-transform ${isAttacking ? 'translate-x-1' : ''}`}></div>
-            <div className={`w-6 h-7 ${isAltForm && typeId === 'sworder' ? 'bg-zinc-800' : typeId === 'e_baller' || typeId === 'e_cake_thrower' ? 'bg-purple-600' : isAlly ? 'bg-[#b91c1c]' : 'bg-[#dc2626]'} shadow-inner border-x border-black/10`}></div>
+            <div className={`w-6 h-7 ${isAltForm && typeId === 'sworder' ? 'bg-zinc-800' : typeId === 'e_baller' || typeId === 'e_cake_thrower' ? 'bg-purple-600' : typeId === 'e_enforcer' ? 'bg-zinc-800' : isAlly ? 'bg-[#b91c1c]' : 'bg-[#dc2626]'} shadow-inner border-x border-black/10`}></div>
             <div className={`w-2 h-6 bg-blue-600 rounded-r-sm transition-transform ${isAttacking ? '-translate-x-2 scale-x-150' : ''}`}></div>
           </div>
           <div className="flex justify-center gap-1 mt-[-1px] relative z-0">
@@ -535,19 +636,21 @@ export default function App() {
   const [almanacType, setAlmanacType] = useState<'enemy' | 'ally'>('enemy');
   const [cannonReadyTime, setCannonReadyTime] = useState<number>(0);
   const [cannonEffectActive, setCannonEffectActive] = useState<boolean>(false);
-  const [lastWinReward, setLastWinReward] = useState<{coins: number, isFirst: boolean} | null>(null);
+  const [lastWinReward, setLastWinReward] = useState<{coins: number, diamonds: number, isFirst: boolean} | null>(null);
   const [unitLastSpawnTimes, setUnitLastSpawnTimes] = useState<Record<string, number>>({});
   const [showSandboxPanel, setShowSandboxPanel] = useState(false);
   const [bossSpawned, setBossSpawned] = useState(false);
   
+  // Gacha State
+  const [gachaResult, setGachaResult] = useState<{ unitId: string, isUnlock: boolean, rarity: string } | null>(null);
+  const [isGachaRolling, setIsGachaRolling] = useState(false);
+
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
     };
 
@@ -560,21 +663,16 @@ export default function App() {
 
   const handleInstallApp = async () => {
     if (deferredPrompt) {
-      // Show the install prompt
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         console.log('User accepted the install prompt');
         setDeferredPrompt(null);
-      } else {
-        console.log('User dismissed the install prompt');
       }
     }
   };
   
   const [gameState, setGameState] = useState<GameState>(() => {
-    // Check version - if mismatch, wipe data immediately
     const savedVersion = getCookie('bh_version');
     if (savedVersion !== GAME_VERSION) {
       clearAllGameData();
@@ -582,18 +680,20 @@ export default function App() {
 
     const savedLevel = getCookie('bh_level');
     const savedXP = getCookie('bh_xp');
-    // const savedCoins = getCookie('bh_coins'); // OVERRIDE FOR TESTING
     const savedUnitLevels = getCookie('bh_unit_levels');
     const savedPreferredForms = getCookie('bh_preferred_forms');
     const savedLoadout = getCookie('bh_loadout');
-    // const savedStages = getCookie('bh_stages'); // OVERRIDE FOR TESTING
     const savedCannonLevel = getCookie('bh_cannon_level');
     const savedBankLevel = getCookie('bh_bank_level');
     const savedStartingBudgetLevel = getCookie('bh_starting_budget_level');
+    const savedDiamonds = getCookie('bh_diamonds');
+    const savedBossClaims = getCookie('bh_boss_claims');
     
-    // FOR TESTING: Create a map with all player units at Level 35
-    const testingUnitLevels = PLAYER_UNITS.reduce((acc, unit) => {
-        acc[unit.id] = 35;
+    // Default Unit Levels
+    const initialUnitLevels = PLAYER_UNITS.reduce((acc, unit) => {
+        acc[unit.id] = unit.unlockLevel === 1 ? 1 : 0; // Only unlock baby initially
+        if (unit.id === 'cola_thrower') acc[unit.id] = 0; // Explicitly locked
+        if (unit.id === 'retro_battler') acc[unit.id] = 0; // Explicitly locked
         return acc;
     }, {} as Record<string, number>);
 
@@ -601,19 +701,21 @@ export default function App() {
       screen: 'menu',
       money: INITIAL_MONEY,
       coins: 9999999999999999, // FOR TESTING: 9 Quadrillion (ish)
+      diamonds: 1000000, // FOR TESTING: 1 Million Diamonds
       walletLevel: 0,
       playerBaseHp: 500,
       enemyBaseHp: 500,
       units: [],
       isGameOver: false,
       winner: null,
-      battleLog: ["System initialized. TESTING MODE ACTIVE (Lvl 35 Allies)."],
+      battleLog: ["System initialized."],
       playerLevel: savedLevel ? parseInt(savedLevel) : 1,
       playerXP: savedXP ? parseInt(savedXP) : 0,
-      unitLevels: testingUnitLevels, // FOR TESTING: All units level 35 override
+      unitLevels: savedUnitLevels ? JSON.parse(savedUnitLevels) : initialUnitLevels,
       preferredForms: savedPreferredForms ? JSON.parse(savedPreferredForms) : {},
       loadout: savedLoadout ? JSON.parse(savedLoadout) : ['baby'],
       unlockedStages: STAGE_CONFIG.map(s => s.id), // FOR TESTING: Unlock All Stages
+      claimedBossStages: savedBossClaims ? JSON.parse(savedBossClaims) : [],
       currentStage: 1,
       cannonLevel: savedCannonLevel ? parseInt(savedCannonLevel) : 1,
       bankLevel: savedBankLevel ? parseInt(savedBankLevel) : 1,
@@ -628,14 +730,16 @@ export default function App() {
     setCookie('bh_level', gameState.playerLevel.toString());
     setCookie('bh_xp', gameState.playerXP.toString());
     setCookie('bh_coins', gameState.coins.toString());
+    setCookie('bh_diamonds', gameState.diamonds.toString());
     setCookie('bh_unit_levels', JSON.stringify(gameState.unitLevels));
     setCookie('bh_preferred_forms', JSON.stringify(gameState.preferredForms));
     setCookie('bh_loadout', JSON.stringify(gameState.loadout));
     setCookie('bh_stages', JSON.stringify(gameState.unlockedStages));
+    setCookie('bh_boss_claims', JSON.stringify(gameState.claimedBossStages));
     setCookie('bh_cannon_level', gameState.cannonLevel.toString());
     setCookie('bh_bank_level', gameState.bankLevel.toString());
     setCookie('bh_starting_budget_level', gameState.startingBudgetLevel.toString());
-  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel]);
+  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.diamonds, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.claimedBossStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel]);
 
   // --- Theme Music Controller ---
   useEffect(() => {
@@ -657,7 +761,13 @@ export default function App() {
     };
   }, [gameState.screen, gameState.isGameOver, gameState.currentStage]);
 
-  const isUnitUnlocked = (unit: UnitType) => gameState.unlockedStages.includes(unit.unlockLevel);
+  const isUnitUnlocked = (unit: UnitType) => {
+      // Special logic for Gacha units
+      if (unit.unlockLevel >= 100) {
+          return (gameState.unitLevels[unit.id] || 0) > 0;
+      }
+      return gameState.unlockedStages.includes(unit.unlockLevel);
+  }
 
   const getUpgradeCost = useCallback((unit: UnitType, level: number) => {
     let baseUpgradeCost = UNIT_UPGRADE_BASE_COST;
@@ -680,7 +790,7 @@ export default function App() {
   const enemyMoneyRef = useRef(INITIAL_MONEY);
   const enemyCooldownsRef = useRef<Record<string, number>>({ 
       'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 
-      'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0
+      'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0
   });
   const battleStartTimeRef = useRef(0);
 
@@ -782,6 +892,52 @@ export default function App() {
     }
   };
 
+  // --- GACHA LOGIC ---
+  const rollGacha = () => {
+      if (gameState.diamonds < GACHA_COST || isGachaRolling) return;
+      
+      setIsGachaRolling(true);
+      sounds.playUpgrade(); // Sound effect start
+      
+      setGameState(p => ({...p, diamonds: p.diamonds - GACHA_COST}));
+
+      setTimeout(() => {
+          const rand = Math.random();
+          let unitId = '';
+          let rarity = 'Rare';
+          
+          if (rand < 0.05) { // 5% Uber Rare
+             rarity = 'Uber Rare';
+             unitId = 'ceo';
+          } else if (rand < 0.30) { // 25% Super Rare
+             rarity = 'Super Rare';
+             const pool = ['guard', 'engineer'];
+             unitId = pool[Math.floor(Math.random() * pool.length)];
+          } else { // 70% Rare (NOW EXCLUSIVE ONLY: Cola Thrower & Retro Battler)
+             rarity = 'Rare';
+             // EXCLUSIVE UNITS ONLY - Removed basic units (Baby, Tank, Sworder, Pistoler)
+             const pool = ['cola_thrower', 'retro_battler']; 
+             unitId = pool[Math.floor(Math.random() * pool.length)];
+          }
+
+          // Check if already owned
+          const currentLevel = gameState.unitLevels[unitId] || 0;
+          const isUnlock = currentLevel === 0;
+          
+          setGameState(p => ({
+              ...p,
+              unitLevels: {
+                  ...p.unitLevels,
+                  [unitId]: Math.min(10, (p.unitLevels[unitId] || 0) + 1)
+              }
+          }));
+
+          setGachaResult({ unitId, isUnlock, rarity });
+          setIsGachaRolling(false);
+          sounds.playWin(); // Success sound
+      }, 2000); // Animation delay
+  };
+
   const startBattle = useCallback((stage: number, isSandbox: boolean = false) => {
     const maxHp = 500 + (stage - 1) * 1000;
     sounds.playClick();
@@ -807,7 +963,7 @@ export default function App() {
     setUnitLastSpawnTimes({});
     battleStartTimeRef.current = Date.now();
     enemyMoneyRef.current = INITIAL_MONEY;
-    enemyCooldownsRef.current = { 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0 };
+    enemyCooldownsRef.current = { 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0 };
     setShowSandboxPanel(isSandbox); // Auto open panel in sandbox
     setBossSpawned(false);
   }, []);
@@ -850,7 +1006,7 @@ export default function App() {
         ...prev,
         units: newUnits,
         enemyBaseHp: Math.max(0, prev.enemyBaseHp - (damage * 0.5)),
-        battleLog: ["Orbital budget reconciliation complete.", ...prev.battleLog].slice(0, 10)
+        battleLog: ["Base Cannon fired!", ...prev.battleLog].slice(0, 10)
       };
     });
 
@@ -858,7 +1014,7 @@ export default function App() {
     setTimeout(() => setCannonEffectActive(false), 500);
 
     try {
-      const commentary = await generateBattleCommentary("The player fired the corporate cannon.");
+      const commentary = await generateBattleCommentary("The player fired the base cannon.");
       setGameState(prev => ({
         ...prev,
         battleLog: [commentary, ...prev.battleLog].slice(0, 10)
@@ -1007,12 +1163,12 @@ export default function App() {
               if (prev.currentStage >= 11) enemyDamageScaling = 1.05; // 5% Boost
           }
           
-          const actualDmg = stats.damage * (u.side === 'player' ? (1 + (level - 1) * STAT_GAIN_PER_LEVEL) : enemyDamageScaling);
+          let actualDmg = stats.damage * (u.side === 'player' ? (1 + (level - 1) * STAT_GAIN_PER_LEVEL) : enemyDamageScaling);
           if (u.typeId === 'e_wall') continue;
           
           const distToBase = u.side === 'player' ? FIELD_WIDTH - u.x : u.x;
           
-          // Effective Range Logic for Cake Thrower
+          // Effective Range Logic for Cake Thrower and Cola Thrower (Alt)
           let effectiveRange = stats.range;
           if (u.typeId === 'e_cake_thrower' && u.hasThrownCake) {
              effectiveRange = 40; // Reverts to melee range after throwing
@@ -1067,6 +1223,35 @@ export default function App() {
                   target.stunnedUntil = now + 3000; // 3s Stun
                   sounds.playBaseHit(); // Heavy impact
               }
+              // --- COLA THROWER LOGIC ---
+              else if (u.typeId === 'cola_thrower') {
+                 if (u.isAltForm) {
+                     // Cola Spray: Apply stack and calculate damage
+                     const stackCount = target.colaStacks || 0;
+                     if (stackCount < 14) {
+                        target.colaStacks = stackCount + 1;
+                     }
+                     const finalDmg = actualDmg * (1 + (0.15 * (target.colaStacks || 0)));
+                     target.currentHp -= finalDmg;
+                     
+                     // Alt Form Knockback Buff: Small push per hit
+                     const sprayKnockback = 15;
+                     target.x += (u.side === 'player' ? 1 : -1) * sprayKnockback;
+                     target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
+                 } else {
+                     // Base Form: AOE Knockback
+                     // Hit main target and nearby
+                     const aoeTargets = newUnits.filter(other => 
+                        other.side !== u.side && Math.abs(other.x - target!.x) <= 50
+                     );
+                     aoeTargets.forEach(t => {
+                        t.currentHp -= actualDmg;
+                        const knockback = 60; // Buffed from 20 to 60 (Massive Knockback)
+                        t.x += (u.side === 'player' ? 1 : -1) * knockback;
+                        t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
+                     });
+                 }
+              }
               else {
                   // Standard Unit Attack
                   target.currentHp -= actualDmg;
@@ -1116,6 +1301,8 @@ export default function App() {
         let over = false; let win: Side | null = null;
         let xp = prev.playerXP; let plvl = prev.playerLevel;
         let stages = [...prev.unlockedStages]; let newCoins = prev.coins;
+        let earnedDiamonds = 0; let claimedBosses = [...prev.claimedBossStages];
+
         if (fPHp <= 0) { over = true; win = 'enemy'; sounds.playLoss(); }
         else if (fEHp <= 0) {
           over = true; win = 'player'; sounds.playWin();
@@ -1128,13 +1315,36 @@ export default function App() {
              const multiplier = isFirst ? (stageInfo?.isBoss ? BOSS_CLEAR_MULTIPLIER : FIRST_CLEAR_MULTIPLIER) : 1;
              const reward = Math.floor(prev.currentStage * REWARD_PER_STAGE * multiplier);
              
-             newCoins += reward; setLastWinReward({ coins: reward, isFirst });
+             newCoins += reward; 
              if (!stages.includes(prev.currentStage + 1)) stages.push(prev.currentStage + 1);
+
+             // Boss Diamond Reward Logic
+             if (BOSS_STAGE_IDS.includes(prev.currentStage) && !claimedBosses.includes(prev.currentStage)) {
+                 earnedDiamonds = 100;
+                 claimedBosses.push(prev.currentStage);
+             }
+
+             setLastWinReward({ coins: reward, isFirst, diamonds: earnedDiamonds });
+
           } else {
-             setLastWinReward({ coins: 0, isFirst: false });
+             setLastWinReward({ coins: 0, diamonds: 0, isFirst: false });
           }
         }
-        return { ...prev, money: newMoney, coins: newCoins, units: filtered, playerBaseHp: fPHp, enemyBaseHp: fEHp, isGameOver: over, winner: win, playerXP: xp, playerLevel: plvl, unlockedStages: stages };
+        return { 
+            ...prev, 
+            money: newMoney, 
+            coins: newCoins, 
+            diamonds: prev.diamonds + earnedDiamonds,
+            claimedBossStages: claimedBosses,
+            units: filtered, 
+            playerBaseHp: fPHp, 
+            enemyBaseHp: fEHp, 
+            isGameOver: over, 
+            winner: win, 
+            playerXP: xp, 
+            playerLevel: plvl, 
+            unlockedStages: stages 
+        };
       });
     }, GAME_TICK_INTERVAL);
     return () => clearInterval(interval);
@@ -1170,7 +1380,7 @@ export default function App() {
     if (unitId === 'starting_budget_upgrade') {
       const level = gameState.startingBudgetLevel;
       const cost = Math.floor(STARTING_BUDGET_UPGRADE_BASE_COST * Math.pow(STARTING_BUDGET_UPGRADE_COST_MULTIPLIER, level - 1));
-      return renderUpgradeCard("fas fa-briefcase", "Initial Budget", level, "Increases starting money for operations.", `$${INITIAL_MONEY + (level - 1) * STARTING_BUDGET_GAIN_PER_LEVEL}`, cost, () => {
+      return renderUpgradeCard("fas fa-briefcase", "Starting Money", level, "Increases starting money for operations.", `$${INITIAL_MONEY + (level - 1) * STARTING_BUDGET_GAIN_PER_LEVEL}`, cost, () => {
         sounds.playUpgrade(); setGameState(p => ({ ...p, coins: p.coins - cost, startingBudgetLevel: p.startingBudgetLevel + 1 }));
       });
     }
@@ -1186,7 +1396,7 @@ export default function App() {
     if (unitId === 'bank_upgrade') {
       const cost = getBankUpgradeCost(gameState.bankLevel);
       const curIncome = (BASE_BANK_INCOME_PER_TICK + (gameState.bankLevel - 1) * BANK_INCOME_GAIN_PER_LEVEL) * 10;
-      return renderUpgradeCard("fas fa-chart-line", "Corporate Bank", gameState.bankLevel, "Increases passive income generation rate.", `$${curIncome.toFixed(1)}/s`, cost, () => {
+      return renderUpgradeCard("fas fa-chart-line", "Efficiency Upgrade", gameState.bankLevel, "Increases passive income generation rate.", `$${curIncome.toFixed(1)}/s`, cost, () => {
         sounds.playUpgrade(); setGameState(p => ({ ...p, coins: p.coins - cost, bankLevel: p.bankLevel + 1 }));
       });
     }
@@ -1303,10 +1513,10 @@ export default function App() {
                 <div className="relative z-10 flex flex-col items-center gap-12 w-full max-w-4xl px-6">
                     {/* Header */}
                     <div className="text-center space-y-2 animate-in slide-in-from-top duration-700">
-                        <div className="text-blue-500 font-black tracking-[0.5em] text-xs uppercase mb-2">Internal Tools v{GAME_VERSION}</div>
+                        <div className="text-blue-500 font-black tracking-[0.5em] text-xs uppercase mb-2">Game Version {GAME_VERSION}</div>
                         <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]">
-                            CORPORATE
-                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">UPRISING</span>
+                            BATTLE
+                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">HUMANS</span>
                         </h1>
                     </div>
 
@@ -1324,22 +1534,35 @@ export default function App() {
                                     <span className="text-blue-300 font-bold text-xs tracking-widest uppercase">Active Operation</span>
                                 </div>
                                 <div className="text-4xl font-black italic text-white mb-1">CAMPAIGN</div>
-                                <div className="text-slate-400 font-medium">Continue your hostile takeover.</div>
+                                <div className="text-slate-400 font-medium">Continue your adventure.</div>
                             </div>
                             <div className="relative z-10 w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/50">
                                 <i className="fas fa-play"></i>
+                            </div>
+                        </button>
+                        
+                        {/* GACHA BUTTON */}
+                         <button onClick={() => setGameState(p => ({...p, screen: 'gacha'}))} className="md:col-span-3 h-24 bg-gradient-to-r from-purple-900/60 to-pink-900/60 rounded-2xl border border-pink-500/30 hover:border-pink-400 transition-all flex items-center justify-between px-8 group relative overflow-hidden">
+                            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse-slow"></div>
+                            <div className="flex flex-col items-start relative z-10">
+                                <span className="text-pink-300 font-bold text-xs tracking-widest uppercase mb-1">Recruitment Center</span>
+                                <span className="text-2xl font-black italic text-white">RARE CAPSULE</span>
+                            </div>
+                            <div className="flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-xl border border-pink-500/20">
+                                <i className="fas fa-gem text-cyan-400"></i>
+                                <span className="font-mono font-bold text-white">{gameState.diamonds}</span>
                             </div>
                         </button>
 
                         {/* Secondary Actions */}
                         <button onClick={() => setGameState(p => ({...p, screen: 'shop'}))} className="h-32 bg-slate-900/60 rounded-2xl border border-white/10 hover:bg-slate-800 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-2 group">
                             <i className="fas fa-shopping-cart text-3xl text-slate-500 group-hover:text-white transition-colors"></i>
-                            <span className="font-bold text-sm tracking-wide text-slate-300">ACQUISITIONS</span>
+                            <span className="font-bold text-sm tracking-wide text-slate-300">UPGRADES</span>
                         </button>
                         
                         <button onClick={() => setGameState(p => ({...p, screen: 'loadout'}))} className="h-32 bg-slate-900/60 rounded-2xl border border-white/10 hover:bg-slate-800 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-2 group">
                             <i className="fas fa-users-cog text-3xl text-slate-500 group-hover:text-white transition-colors"></i>
-                            <span className="font-bold text-sm tracking-wide text-slate-300">PERSONNEL</span>
+                            <span className="font-bold text-sm tracking-wide text-slate-300">UNITS</span>
                         </button>
 
                         <button onClick={() => setGameState(p => ({...p, screen: 'almanac'}))} className="h-32 bg-slate-900/60 rounded-2xl border border-white/10 hover:bg-slate-800 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-2 group">
@@ -1353,8 +1576,92 @@ export default function App() {
                         onClick={() => startBattle(1, true)}
                         className="text-xs font-bold text-yellow-600 hover:text-yellow-400 uppercase tracking-widest border-b border-transparent hover:border-yellow-500 transition-all pb-1 animate-in fade-in delay-300"
                     >
-                        <i className="fas fa-flask mr-2"></i> Enter Simulation Mode
+                        <i className="fas fa-flask mr-2"></i> Enter Sandbox Mode
                     </button>
+                </div>
+            </ScreenWrapper>
+        );
+      case 'gacha':
+        return (
+            <ScreenWrapper className="flex items-center justify-center">
+                <button onClick={exitToMenu} className="absolute top-6 left-6 w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors text-slate-400 hover:text-white z-20"><i className="fas fa-arrow-left"></i></button>
+                
+                <div className="relative w-full max-w-2xl bg-slate-900/80 backdrop-blur-xl border border-pink-500/30 rounded-3xl p-10 flex flex-col items-center shadow-2xl overflow-hidden">
+                    {/* Background FX */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-pink-900/20 pointer-events-none"></div>
+                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl"></div>
+                    
+                    {!gachaResult ? (
+                        <>
+                            <h2 className="text-4xl font-black italic text-white mb-2 relative z-10">RECRUITMENT</h2>
+                            <p className="text-pink-300 font-medium mb-10 relative z-10">Secure high-value assets for your corporation.</p>
+                            
+                            <div className="relative w-48 h-48 mb-10 flex items-center justify-center">
+                                {isGachaRolling ? (
+                                    <div className="absolute inset-0 rounded-full border-4 border-pink-500 border-t-transparent animate-spin"></div>
+                                ) : (
+                                    <div className="w-40 h-40 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full shadow-[0_0_50px_rgba(236,72,153,0.4)] flex items-center justify-center animate-pulse-slow">
+                                        <i className="fas fa-question text-6xl text-white/50"></i>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4 w-full mb-8 text-center text-xs font-bold uppercase tracking-widest text-slate-500">
+                                <div><span className="text-white block text-lg">5%</span> Uber Rare</div>
+                                <div><span className="text-white block text-lg">25%</span> Super Rare</div>
+                                <div><span className="text-white block text-lg">70%</span> Rare</div>
+                            </div>
+
+                            <button 
+                                onClick={rollGacha}
+                                disabled={gameState.diamonds < GACHA_COST || isGachaRolling}
+                                className="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl font-bold text-xl text-white shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
+                            >
+                                {isGachaRolling ? (
+                                    <span>PROCESSING...</span>
+                                ) : (
+                                    <>
+                                        <span>ROLL 1x</span>
+                                        <div className="bg-black/20 px-3 py-1 rounded-lg text-sm flex items-center gap-1">
+                                            <i className="fas fa-gem text-cyan-400"></i> {GACHA_COST}
+                                        </div>
+                                    </>
+                                )}
+                            </button>
+                            <div className="mt-4 text-xs font-bold text-cyan-400">
+                                CURRENT BALANCE: <i className="fas fa-gem ml-1"></i> {gameState.diamonds}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center animate-in zoom-in duration-300">
+                            <div className={`text-sm font-black uppercase tracking-[0.3em] mb-4 ${
+                                gachaResult.rarity === 'Uber Rare' ? 'text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]' : 
+                                gachaResult.rarity === 'Super Rare' ? 'text-red-400' : 'text-blue-400'
+                            }`}>
+                                {gachaResult.rarity} ACQUIRED
+                            </div>
+                            
+                            <div className="w-32 h-32 bg-slate-800 rounded-2xl border-2 border-white/20 flex items-center justify-center mb-6 shadow-2xl relative overflow-hidden">
+                                <div className="scale-150"><BattlerVisual typeId={gachaResult.unitId} size="lg" isAlmanac={true} /></div>
+                                {gachaResult.rarity === 'Uber Rare' && <div className="absolute inset-0 bg-yellow-400/10 animate-pulse"></div>}
+                            </div>
+                            
+                            <h2 className="text-3xl font-black italic text-white mb-2">
+                                {PLAYER_UNITS.find(u => u.id === gachaResult.unitId)?.name}
+                            </h2>
+                            
+                            <div className="bg-slate-950/50 px-6 py-2 rounded-full mb-8 border border-white/5 text-sm font-mono text-slate-300">
+                                {gachaResult.isUnlock ? 'NEW UNIT UNLOCKED!' : '+1 LEVEL UP!'}
+                            </div>
+                            
+                            <button 
+                                onClick={() => setGachaResult(null)}
+                                className="px-10 py-3 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                            >
+                                CONTINUE
+                            </button>
+                        </div>
+                    )}
                 </div>
             </ScreenWrapper>
         );
@@ -1368,6 +1675,160 @@ export default function App() {
                 />
             </ScreenWrapper>
         );
+      case 'battle':
+        return (
+             <ScreenWrapper>
+                {/* Battle UI Overlay */}
+                <div className="absolute top-0 left-0 w-full p-2 z-10 flex justify-between items-start pointer-events-none">
+                    <button onClick={exitToMenu} className="pointer-events-auto bg-slate-800/80 text-white p-2 rounded-lg border border-slate-600"><i className="fas fa-pause"></i></button>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="bg-slate-900/80 px-3 py-1 rounded-full border border-blue-500/30 flex items-center gap-2">
+                             <span className="text-yellow-400 font-bold text-sm"><i className="fas fa-coins mr-1"></i> {Math.floor(gameState.money)}</span>
+                             <span className="text-xs text-slate-400">/ {999999}</span>
+                        </div>
+                        <div className="bg-slate-900/80 px-2 py-0.5 rounded text-[10px] text-slate-400">
+                           Level {gameState.walletLevel + 1} ({MONEY_MULTIPLIER[gameState.walletLevel]}x)
+                        </div>
+                    </div>
+                </div>
+
+                {/* Cannon Button */}
+                <button 
+                   onClick={fireCannon}
+                   disabled={Date.now() < cannonReadyTime}
+                   className={`absolute bottom-32 right-4 z-20 w-16 h-16 rounded-full border-4 shadow-xl flex items-center justify-center transition-all ${Date.now() < cannonReadyTime ? 'bg-slate-800 border-slate-600 grayscale opacity-50' : 'bg-red-600 border-red-800 animate-pulse hover:scale-110 active:scale-95'}`}
+                >
+                   <i className="fas fa-meteor text-2xl text-white"></i>
+                </button>
+                
+                {/* Wallet Button */}
+                <button
+                   onClick={upgradeWallet}
+                   disabled={gameState.walletLevel >= WALLET_UPGRADE_COSTS.length - 1 || gameState.money < WALLET_UPGRADE_COSTS[gameState.walletLevel]}
+                   className={`absolute bottom-32 left-4 z-20 w-16 h-16 rounded-full border-4 shadow-xl flex flex-col items-center justify-center transition-all ${gameState.walletLevel >= WALLET_UPGRADE_COSTS.length - 1 ? 'bg-slate-800 border-slate-600 opacity-50' : 'bg-yellow-600 border-yellow-800 hover:bg-yellow-500 active:scale-95'}`}
+                >
+                   <i className="fas fa-arrow-up text-white mb-1"></i>
+                   <span className="text-[10px] font-black text-white leading-none">
+                      {gameState.walletLevel >= WALLET_UPGRADE_COSTS.length - 1 ? 'MAX' : `$${WALLET_UPGRADE_COSTS[gameState.walletLevel]}`}
+                   </span>
+                </button>
+
+                {/* Unit Deployment Bar */}
+                <div className="absolute bottom-0 w-full h-28 md:h-32 bg-slate-900/90 border-t border-white/10 flex items-center px-2 gap-2 overflow-x-auto no-scrollbar z-30">
+                    {gameState.loadout.map(id => {
+                        const unit = PLAYER_UNITS.find(u => u.id === id);
+                        if (!unit) return null;
+                        return (
+                            <UnitCard 
+                                key={id} 
+                                unit={unit} 
+                                money={gameState.money} 
+                                unitLevel={gameState.unitLevels[id] || 1}
+                                isAltPreferred={gameState.preferredForms[id] ?? true}
+                                lastSpawnTime={unitLastSpawnTimes[id] || 0}
+                                onDeploy={(uid) => deployUnit('player', uid)} 
+                            />
+                        );
+                    })}
+                </div>
+
+                {/* The Battlefield Render */}
+                <Battlefield 
+                    units={gameState.units} 
+                    playerBaseHp={gameState.playerBaseHp} 
+                    enemyBaseHp={gameState.enemyBaseHp}
+                    maxBaseHp={500 + (gameState.currentStage - 1) * 1000}
+                    unitLevels={gameState.unitLevels}
+                    cannonEffect={cannonEffectActive}
+                    currentStage={gameState.currentStage}
+                    isEnemyImmune={false}
+                />
+                
+                {/* Sandbox Panel */}
+                {gameState.sandboxMode && (
+                   <div className={`absolute top-16 right-0 bg-slate-900/90 border-l border-white/10 transition-transform duration-300 z-50 ${showSandboxPanel ? 'translate-x-0' : 'translate-x-full'}`}>
+                      <button onClick={() => setShowSandboxPanel(!showSandboxPanel)} className="absolute top-0 -left-8 w-8 h-8 bg-slate-800 text-white flex items-center justify-center rounded-l-lg text-xs"><i className={`fas ${showSandboxPanel ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i></button>
+                      <div className="p-4 w-64 h-[80vh] overflow-y-auto">
+                          <h3 className="text-yellow-400 font-bold mb-4 uppercase text-xs tracking-widest border-b border-white/10 pb-2">Sandbox Tools</h3>
+                          
+                          <div className="mb-4">
+                              <label className="text-[10px] text-slate-400 uppercase font-bold">Game Speed</label>
+                              <div className="flex gap-2 mt-1">
+                                  <button onClick={() => setGameState(p => ({...p, sandboxPaused: !p.sandboxPaused}))} className={`flex-1 py-1 rounded text-xs font-bold ${gameState.sandboxPaused ? 'bg-red-600' : 'bg-slate-700'}`}>{gameState.sandboxPaused ? 'RESUME' : 'PAUSE'}</button>
+                              </div>
+                          </div>
+
+                          <div className="mb-4">
+                              <label className="text-[10px] text-slate-400 uppercase font-bold">Spawn Enemy</label>
+                              <div className="grid grid-cols-4 gap-2 mt-1">
+                                  {ENEMY_UNITS.map(u => (
+                                      <button key={u.id} onClick={() => deploySandboxUnit(u.id, 'enemy')} className="aspect-square bg-red-900/50 hover:bg-red-800 border border-red-500/30 rounded flex items-center justify-center" title={u.name}>
+                                          <div className="scale-50"><BattlerVisual typeId={u.id} isAlmanac={true} /></div>
+                                      </button>
+                                  ))}
+                              </div>
+                          </div>
+                      </div>
+                   </div>
+                )}
+                
+                <GameAssistant gameState={gameState} />
+                
+                {/* Battle Log Overlay */}
+                <div className="absolute top-16 left-4 max-w-[200px] md:max-w-sm pointer-events-none opacity-80 z-0">
+                    {gameState.battleLog.slice(0, 3).map((log, i) => (
+                        <div key={i} className="text-[10px] md:text-xs text-white/80 text-shadow-sm mb-1 animate-in fade-in slide-in-from-left-2">
+                             <span className="text-blue-400 mr-1">[{new Date().toLocaleTimeString([], {hour12: false, minute:'2-digit', second:'2-digit'})}]</span> {log}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Game Over Screen */}
+                {gameState.isGameOver && (
+                    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center backdrop-blur-sm animate-in zoom-in duration-300">
+                        <div className="bg-slate-900 border-2 border-white/10 p-8 rounded-3xl text-center max-w-md shadow-2xl relative overflow-hidden">
+                             <div className={`absolute top-0 left-0 w-full h-2 ${gameState.winner === 'player' ? 'bg-blue-500' : 'bg-red-500'}`}></div>
+                             <h2 className={`text-5xl font-black italic mb-2 ${gameState.winner === 'player' ? 'text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300' : 'text-red-500'}`}>
+                                 {gameState.winner === 'player' ? 'VICTORY' : 'DEFEAT'}
+                             </h2>
+                             <div className="text-slate-400 mb-8 font-medium">
+                                 {gameState.winner === 'player' ? 'The corporation expands.' : 'Your department has been liquidated.'}
+                             </div>
+                             
+                             {lastWinReward && gameState.winner === 'player' && (
+                                 <div className="mb-6 bg-slate-950/50 p-4 rounded-xl border border-white/5">
+                                     <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Rewards Acquired</div>
+                                     <div className="flex justify-center gap-4">
+                                         {lastWinReward.coins > 0 && (
+                                            <div className="flex flex-col items-center">
+                                                <div className="text-yellow-400 text-xl font-mono font-bold">+${lastWinReward.coins}</div>
+                                                <div className="text-[10px] text-slate-500">Budget</div>
+                                            </div>
+                                         )}
+                                         {lastWinReward.diamonds > 0 && (
+                                            <div className="flex flex-col items-center">
+                                                <div className="text-cyan-400 text-xl font-mono font-bold">+{lastWinReward.diamonds}</div>
+                                                <div className="text-[10px] text-slate-500">Gems</div>
+                                            </div>
+                                         )}
+                                     </div>
+                                 </div>
+                             )}
+
+                             <div className="flex gap-4 justify-center">
+                                 <button onClick={exitToMenu} className="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl font-bold transition-colors">Return to HQ</button>
+                                 {gameState.winner === 'player' && !gameState.sandboxMode && (
+                                     <button onClick={() => startBattle(gameState.currentStage + 1)} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/25 transition-all hover:scale-105">Next Operation</button>
+                                 )}
+                                 {gameState.winner === 'enemy' && (
+                                     <button onClick={() => startBattle(gameState.currentStage)} className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/25 transition-all hover:scale-105">Retry</button>
+                                 )}
+                             </div>
+                        </div>
+                    </div>
+                )}
+             </ScreenWrapper>
+        );
       case 'shop':
       case 'loadout':
       case 'almanac':
@@ -1380,7 +1841,7 @@ export default function App() {
                     <div className="p-4 md:p-6 border-b border-white/5 shrink-0">
                         <div className="flex items-center gap-4 mb-4 md:mb-6">
                             <button onClick={exitToMenu} className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"><i className="fas fa-arrow-left"></i></button>
-                            <h1 className="text-xl md:text-2xl font-black italic tracking-tighter truncate">{isShop ? 'ACQUISITIONS' : isLoadout ? 'LOADOUT' : 'ARCHIVES'}</h1>
+                            <h1 className="text-xl md:text-2xl font-black italic tracking-tighter truncate">{isShop ? 'UPGRADES' : isLoadout ? 'LOADOUT' : 'ARCHIVES'}</h1>
                         </div>
                         {/* Tab Switcher - Quick nav between management screens */}
                         <div className="flex bg-slate-950 p-1 rounded-lg">
@@ -1434,11 +1895,11 @@ export default function App() {
 
                         {/* List Items */}
                         {(isShop ? 
-                            [{id: 'bank_upgrade', name: 'Corporate Bank', icon: 'fas fa-chart-line', group: 'Infra'}, {id: 'starting_budget_upgrade', name: 'Startup Capital', icon: 'fas fa-briefcase', group: 'Infra'}, {id: 'cannon_upgrade', name: 'Orbital Cannon', icon: 'fas fa-meteor', group: 'Infra'}, ...PLAYER_UNITS.map(u => ({...u, group: 'Units'}))] 
+                            [{id: 'bank_upgrade', name: 'Efficiency Upgrade', icon: 'fas fa-chart-line', group: 'Infra'}, {id: 'starting_budget_upgrade', name: 'Starting Money', icon: 'fas fa-briefcase', group: 'Infra'}, {id: 'cannon_upgrade', name: 'Orbital Cannon', icon: 'fas fa-meteor', group: 'Infra'}, ...PLAYER_UNITS.map(u => ({...u, group: 'Units'}))] 
                             : (gameState.screen === 'almanac' ? (almanacType === 'ally' ? PLAYER_UNITS : ENEMY_UNITS) : PLAYER_UNITS).map(u => ({...u, group: 'Units'}))
                         ).map((item: any) => {
                             const isSelected = selectedUnitId === item.id;
-                            const isOwned = isShop || gameState.unlockedStages.includes(item.unlockLevel) || gameState.screen === 'almanac';
+                            const isOwned = isShop || isUnitUnlocked(item) || gameState.screen === 'almanac';
                             
                             // Loadout Logic
                             const isInLoadout = gameState.loadout.includes(item.id);
@@ -1460,7 +1921,7 @@ export default function App() {
                                     </div>
                                     <div className="text-left flex-1 min-w-0">
                                         <div className={`font-bold text-xs md:text-sm truncate ${isSelected ? 'text-white' : 'text-slate-300'}`}>{item.name}</div>
-                                        <div className={`text-[9px] md:text-[10px] truncate ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>{item.group === 'Infra' ? 'Infrastructure' : 'Personnel Asset'}</div>
+                                        <div className={`text-[9px] md:text-[10px] truncate ${isSelected ? 'text-blue-200' : 'text-slate-500'}`}>{item.group === 'Infra' ? 'Base Upgrade' : 'Combat Unit'}</div>
                                     </div>
                                     {isLoadout && isInLoadout && <div className="text-blue-400 text-xs"><i className="fas fa-check-circle"></i></div>}
                                     {!isOwned && !isShop && <div className="text-red-500 text-xs"><i className="fas fa-lock"></i></div>}
@@ -1476,178 +1937,17 @@ export default function App() {
                 </div>
             </ScreenWrapper>
         );
-      case 'battle':
-        return (
-            <ScreenWrapper className="bg-slate-900">
-                {/* Immersive HUD - Top - Added top padding for mobile safe areas */}
-                <div className="absolute top-0 left-0 right-0 z-30 pt-12 px-4 pb-4 md:p-4 pointer-events-none flex justify-between items-start">
-                    <div className="flex gap-4 pointer-events-auto">
-                        <button onClick={exitToMenu} className="w-10 h-10 rounded-xl bg-slate-900/80 backdrop-blur border border-white/10 text-white flex items-center justify-center hover:bg-red-900/50 hover:border-red-500/50 transition-colors shadow-lg">
-                            <i className="fas fa-pause"></i>
-                        </button>
-                        <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 shadow-lg flex flex-col">
-                            <span className="text-[10px] font-black uppercase text-green-400 tracking-widest">Budget</span>
-                            <span className="text-2xl font-mono font-black text-white leading-none">${Math.floor(gameState.money)}</span>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-slate-900/80 backdrop-blur px-6 py-2 rounded-xl border border-white/10 shadow-lg flex flex-col items-center">
-                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Current Objective</span>
-                         <span className="text-lg font-black italic text-white">{STAGE_CONFIG.find(s => s.id === gameState.currentStage)?.name.toUpperCase() || `STAGE 0${gameState.currentStage}`}</span>
-                    </div>
-
-                    <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-xl border border-white/10 shadow-lg flex flex-col items-end pointer-events-auto">
-                        <span className="text-[10px] font-black uppercase text-yellow-500 tracking-widest">Income Rate</span>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl font-mono font-black text-white leading-none">LVL {gameState.walletLevel + 1}</span>
-                            <button 
-                                onClick={upgradeWallet}
-                                disabled={gameState.walletLevel >= WALLET_UPGRADE_COSTS.length || gameState.money < WALLET_UPGRADE_COSTS[gameState.walletLevel]}
-                                className="w-8 h-8 rounded bg-yellow-600 hover:bg-yellow-500 flex items-center justify-center text-xs text-black font-bold shadow-lg disabled:opacity-50 disabled:grayscale transition-all active:scale-95"
-                            >
-                                <i className="fas fa-arrow-up"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Viewport */}
-                <div className="flex-1 relative">
-                    <Battlefield 
-                        units={gameState.units} 
-                        playerBaseHp={gameState.playerBaseHp} 
-                        enemyBaseHp={gameState.enemyBaseHp} 
-                        maxBaseHp={500 + (gameState.currentStage - 1) * 1000} 
-                        unitLevels={gameState.unitLevels} 
-                        cannonEffect={cannonEffectActive} 
-                        currentStage={gameState.currentStage}
-                        isEnemyImmune={false} 
-                    />
-                    
-                    {/* Sandbox Panel Overlay - Moved down to avoid top HUD */}
-                    {gameState.sandboxMode && (
-                        <div className={`absolute top-32 right-4 z-40 bg-slate-900/90 backdrop-blur border border-yellow-500/30 p-4 rounded-xl transition-all w-64 shadow-2xl ${showSandboxPanel ? 'translate-x-0' : 'translate-x-[120%]'}`}>
-                            <div className="text-xs font-black text-yellow-500 uppercase tracking-widest mb-4 border-b border-yellow-500/20 pb-2 flex justify-between">
-                                <span>Sandbox Tools</span>
-                                <button onClick={() => setShowSandboxPanel(false)}><i className="fas fa-times"></i></button>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase mb-2">Spawn Hostile</div>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {ENEMY_UNITS.map(u => (
-                                            <button key={u.id} onClick={() => deploySandboxUnit(u.id, 'enemy')} className="aspect-square bg-slate-800 hover:bg-slate-700 rounded border border-white/10 flex items-center justify-center" title={u.name}>
-                                                <div className="scale-[0.6]"><BattlerVisual typeId={u.id} /></div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                <button onClick={() => setGameState(p => ({...p, sandboxPaused: !p.sandboxPaused}))} className={`w-full py-2 rounded font-bold text-xs ${gameState.sandboxPaused ? 'bg-green-600 text-white' : 'bg-yellow-600 text-black'}`}>
-                                    {gameState.sandboxPaused ? 'RESUME WAVES' : 'PAUSE WAVES'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    {gameState.sandboxMode && !showSandboxPanel && (
-                        <button onClick={() => setShowSandboxPanel(true)} className="absolute top-32 right-0 bg-yellow-600 text-black p-2 rounded-l-lg shadow-lg z-40"><i className="fas fa-tools"></i></button>
-                    )}
-                </div>
-
-                {/* Bottom Deployment Tray */}
-                <div className="h-32 md:h-40 bg-slate-950 border-t border-slate-800 z-30 flex items-center px-4 gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-                    
-                    {/* Cannon Control */}
-                    <button 
-                        onClick={fireCannon}
-                        disabled={Date.now() < cannonReadyTime}
-                        className="h-24 w-24 md:h-28 md:w-28 shrink-0 bg-slate-900 rounded-2xl border-2 border-slate-700 relative overflow-hidden group active:scale-95 transition-all shadow-inner hover:border-orange-500/50"
-                    >
-                        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 space-y-1">
-                             <div className={`text-4xl transition-all ${Date.now() >= cannonReadyTime ? 'text-orange-500 drop-shadow-[0_0_10px_rgba(249,115,22,0.8)] scale-110' : 'text-slate-700'}`}>
-                                <i className="fas fa-meteor"></i>
-                             </div>
-                             <div className={`text-[10px] font-black uppercase tracking-widest ${Date.now() >= cannonReadyTime ? 'text-white' : 'text-slate-600'}`}>Cannon</div>
-                        </div>
-                        {/* Cooldown Overlay */}
-                        {Date.now() < cannonReadyTime && (
-                             <div className="absolute inset-0 bg-black/60 z-20 flex items-center justify-center backdrop-blur-[1px]">
-                                 <div className="text-xl font-mono font-black text-white">
-                                    {Math.ceil((cannonReadyTime - Date.now()) / 1000)}
-                                 </div>
-                             </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 h-1.5 bg-orange-500 transition-all duration-100 shadow-[0_0_10px_#f97316]" style={{ width: `${Math.min(100, Math.max(0, 100 - ((cannonReadyTime - Date.now()) / CANNON_COOLDOWN) * 100))}%` }}></div>
-                    </button>
-
-                    <div className="w-px h-20 bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
-
-                    {/* Unit Deck - Horizontal Scroll */}
-                    <div className="flex-1 overflow-x-auto flex gap-3 h-full items-center pb-2 no-scrollbar pl-2">
-                        {gameState.loadout.map(id => {
-                            const unit = PLAYER_UNITS.find(u => u.id === id);
-                            if(!unit) return null;
-                            return (
-                                <UnitCard 
-                                    key={id} 
-                                    unit={unit} 
-                                    money={gameState.money} 
-                                    unitLevel={gameState.unitLevels[id] || 1}
-                                    isAltPreferred={gameState.preferredForms[id] ?? true}
-                                    lastSpawnTime={unitLastSpawnTimes[id] || 0}
-                                    onDeploy={(uid) => deployUnit('player', uid)}
-                                />
-                            )
-                        })}
-                    </div>
-                </div>
-
-                {/* Notifications Area */}
-                <div className="absolute top-24 left-1/2 -translate-x-1/2 w-full max-w-lg pointer-events-none flex flex-col items-center gap-2 z-20">
-                    {gameState.battleLog.slice(0, 2).map((log, i) => (
-                        <div key={i} className="bg-slate-900/90 backdrop-blur text-blue-100 text-xs px-4 py-2 rounded-full border border-blue-500/20 shadow-lg animate-in fade-in slide-in-from-top-4">
-                             <span className="text-blue-400 font-bold mr-2">LOG:</span> {log}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Game Assistant */}
-                <GameAssistant gameState={gameState} />
-
-                {/* Game Over Screen */}
-                {gameState.isGameOver && (
-                    <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 animate-in zoom-in duration-300">
-                        <div className="bg-slate-900 border border-white/10 rounded-[2rem] p-10 max-w-md w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
-                             {/* Background Glow */}
-                             <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${gameState.winner === 'player' ? 'from-green-500 via-emerald-400 to-green-500' : 'from-red-500 via-orange-500 to-red-500'}`}></div>
-                             
-                             <div className={`w-28 h-28 rounded-full flex items-center justify-center text-6xl mb-8 shadow-2xl ${gameState.winner === 'player' ? 'bg-gradient-to-br from-green-500 to-emerald-700 text-white' : 'bg-gradient-to-br from-red-500 to-orange-700 text-white'}`}>
-                                 <i className={`fas ${gameState.winner === 'player' ? 'fa-trophy' : 'fa-skull'}`}></i>
-                             </div>
-                             
-                             <h2 className="text-4xl font-black italic text-white mb-2 tracking-tight">{gameState.winner === 'player' ? 'VICTORY' : 'LIQUIDATED'}</h2>
-                             <p className="text-slate-400 mb-8 font-medium">{gameState.winner === 'player' ? 'Hostile takeover successful. Market share increased.' : 'Your department has been downsized. Permanently.'}</p>
-                             
-                             {gameState.winner === 'player' && lastWinReward && (
-                                <div className="bg-slate-950 rounded-xl p-4 w-full mb-8 border border-white/5">
-                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Performance Bonus</div>
-                                    <div className="flex items-center justify-center gap-2 text-3xl font-mono text-yellow-400 font-black tracking-tighter">
-                                        <i className="fas fa-coins text-xl"></i> +{lastWinReward.coins.toLocaleString()}
-                                    </div>
-                                    {lastWinReward.isFirst && <div className="text-[10px] text-green-400 font-bold mt-2 uppercase tracking-widest bg-green-900/20 py-1 px-3 rounded-full inline-block">First Clear Bonus</div>}
-                                </div>
-                             )}
-
-                             <div className="grid grid-cols-2 gap-4 w-full">
-                                <button onClick={exitToMenu} className="bg-slate-800 hover:bg-slate-700 text-white py-4 rounded-xl font-bold transition-all">RETURN TO HUB</button>
-                                <button onClick={() => startBattle(gameState.currentStage, gameState.sandboxMode)} className="bg-white hover:bg-blue-50 text-slate-900 py-4 rounded-xl font-bold transition-all shadow-lg">RETRY</button>
-                             </div>
-                        </div>
-                    </div>
-                )}
-            </ScreenWrapper>
-        );
       default:
-        return <div>Loading...</div>;
+        // Default fallback with a return button if state gets weird
+        return (
+            <div className="flex items-center justify-center h-full flex-col gap-4 text-white">
+                <div className="text-xl font-bold text-red-500">System Error: Invalid State</div>
+                <div className="font-mono text-sm text-slate-400">Current Screen: {gameState.screen || 'undefined'}</div>
+                <button onClick={exitToMenu} className="bg-white text-black px-6 py-2 rounded-lg font-bold hover:bg-slate-200">
+                    Return to Main Menu
+                </button>
+            </div>
+        );
     }
   };
 
@@ -1672,6 +1972,12 @@ export default function App() {
         @keyframes idle-boss { 0%, 100% { transform: scale(1.5); } 50% { transform: scale(1.55); } }
         @keyframes vibrate { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
         
+        /* New Retro Animation */
+        @keyframes step-jump {
+            0%, 49% { transform: translateY(0); }
+            50%, 100% { transform: translateY(-3px); }
+        }
+
         /* Boss Slam Animation */
         @keyframes boss-slam {
           0% { transform: scale(1.5) translateY(0); }
@@ -1691,25 +1997,6 @@ export default function App() {
           100% { transform: translate(160px, 10px) rotate(360deg) scale(1); opacity: 0; }
         }
 
-        /* Classes */
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-        .animate-idle-sway { animation: idle-sway 2.5s ease-in-out infinite; }
-        .animate-idle-aggressive { animation: idle-aggressive 1.5s ease-in-out infinite; }
-        .animate-idle-fidget { animation: idle-fidget 4s ease-in-out infinite; }
-        .animate-idle-breathing { animation: idle-breathing 2s ease-in-out infinite; }
-        .animate-idle-gentle { animation: idle-gentle 3s ease-in-out infinite; }
-        .animate-hammer-hit { animation: hammer-hit 0.5s ease-in-out infinite; }
-        .animate-battler-lunge { animation: battler-lunge 0.2s ease-out; }
-        .animate-double-punch { animation: double-punch 0.3s ease-in-out; }
-        .recoil { animation: unit-recoil 0.1s ease-in-out; }
-        .slash-effect { animation: slash-animation 0.3s ease-out forwards; }
-        .animate-idle-baller { animation: idle-baller 0.8s ease-in-out infinite; }
-        .animate-idle-boss { animation: idle-boss 2s ease-in-out infinite; }
-        .animate-vibrate { animation: vibrate 0.1s linear infinite; }
-        .animate-boss-slam { animation: boss-slam 1s ease-in-out forwards; }
-        .animate-cake-projectile { animation: cake-projectile 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-
         /* Utilities */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
@@ -1717,6 +2004,8 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .animate-step-jump { animation: step-jump 0.5s steps(2, start) infinite; }
       `}</style>
       {renderScreen()}
   </div>;

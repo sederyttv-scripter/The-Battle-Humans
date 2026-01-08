@@ -1,6 +1,6 @@
 
 export type Side = 'player' | 'enemy';
-export type Screen = 'menu' | 'battle' | 'shop' | 'loadout' | 'stages' | 'almanac' | 'sandbox';
+export type Screen = 'menu' | 'battle' | 'shop' | 'loadout' | 'stages' | 'almanac' | 'sandbox' | 'gacha';
 
 export interface AltForm {
   name: string;
@@ -42,12 +42,14 @@ export interface ActiveUnit {
   hasSlammed?: boolean; // Specific for Shotgunner Boss Phase 3
   hasThrownCake?: boolean; // Specific for Cake Thrower
   stunnedUntil?: number; // Timestamp until which unit is stunned
+  colaStacks?: number; // Specific for Cola Spray (Alt form) damage stacking
 }
 
 export interface GameState {
   screen: Screen;
-  money: number;
-  coins: number;
+  money: number; // Battle money
+  coins: number; // Permanent coins
+  diamonds: number; // Premium currency
   walletLevel: number;
   playerBaseHp: number;
   enemyBaseHp: number;
@@ -61,6 +63,7 @@ export interface GameState {
   preferredForms: Record<string, boolean>; // true if Alt form is selected
   loadout: string[];
   unlockedStages: number[];
+  claimedBossStages: number[]; // Track which bosses have given diamonds
   currentStage: number;
   cannonLevel: number;
   bankLevel: number;

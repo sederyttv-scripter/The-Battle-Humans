@@ -1,7 +1,7 @@
 
 import { UnitType } from './types';
 
-export const GAME_VERSION = '1.7.3'; // Boss Reward Patch
+export const GAME_VERSION = '1.7.5';
 
 export const FIELD_WIDTH = 1000;
 export const BASE_HP = 5000;
@@ -10,7 +10,6 @@ export const MONEY_TICK_INTERVAL = 100;
 export const GAME_TICK_INTERVAL = 33;
 
 export const WALLET_UPGRADE_COSTS = [150, 450, 1200, 3000, 7500, 18000];
-// Money per tick acts as a multiplier now
 export const MONEY_MULTIPLIER = [1.0, 1.8, 3.2, 5.5, 9.0, 15.0];
 
 export const XP_PER_WIN = 100;
@@ -20,7 +19,6 @@ export const UNIT_UPGRADE_BASE_COST = 200;
 export const UNIT_UPGRADE_COST_MULTIPLIER = 1.25;
 export const STAT_GAIN_PER_LEVEL = 0.20;
 
-// New Upgrade: Startup Capital
 export const STARTING_BUDGET_GAIN_PER_LEVEL = 55;
 export const STARTING_BUDGET_UPGRADE_BASE_COST = 150;
 export const STARTING_BUDGET_UPGRADE_COST_MULTIPLIER = 1.35; 
@@ -38,7 +36,10 @@ export const CANNON_UPGRADE_BASE_COST = 500;
 
 export const REWARD_PER_STAGE = 225; 
 export const FIRST_CLEAR_MULTIPLIER = 3.25;
-export const BOSS_CLEAR_MULTIPLIER = 5.5; // New multiplier for boss stages
+export const BOSS_CLEAR_MULTIPLIER = 5.5; 
+
+export const BOSS_STAGE_IDS = [10];
+export const GACHA_COST = 100;
 
 export const STAGE_CONFIG = [
   { id: 1, name: "Intern Orientation", subtitle: "The First Day", icon: "fas fa-id-card", color: "from-blue-600 to-blue-900" },
@@ -54,8 +55,8 @@ export const STAGE_CONFIG = [
   { id: 11, name: "Fourth Puncher", subtitle: "Productivity Hack", icon: "fas fa-hands", color: "from-emerald-800 to-black" },
   { id: 12, name: "Puncher Bros", subtitle: "Synergy Strike Team", icon: "fas fa-handshake", color: "from-cyan-800 to-blue-950" },
   { id: 13, name: "Cake Thrower", subtitle: "Sweet Surprise", icon: "fas fa-birthday-cake", color: "from-pink-600 to-purple-900" },
-  { id: 14, name: "Stunlocking", subtitle: "Infinite Crowd Control", icon: "fas fa-dizzy", color: "from-yellow-600 to-amber-950" },
-  { id: 15, name: "All Hands Meeting", subtitle: "Total Synergy", icon: "fas fa-users-slash", color: "from-zinc-800 to-zinc-950", isBoss: true },
+  { id: 14, name: "Stunlocking", subtitle: "Builder, Baller, Battler & Cake Thrower", icon: "fas fa-bolt", color: "from-purple-900/80 to-pink-700/80" },
+  { id: 15, name: "Alley Ambush", subtitle: "Nowhere to Run", icon: "fas fa-road", color: "from-zinc-800 to-stone-950" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -104,240 +105,302 @@ export const PLAYER_UNITS: UnitType[] = [
       range: 35,
       attackCooldown: 1500,
       cost: 300,
-      description: 'The ultimate wall. Moves at a glacial pace but refuses to budge.'
+      description: 'The ultimate wall. Moves at a glacial pace but can withstand a whole department of layoffs.'
     }
   },
   {
     id: 'sworder',
-    name: 'Legal Council',
-    icon: 'fas fa-gavel',
-    cost: 150,
-    hp: 300,
-    damage: 45,
-    speed: 3.5,
-    range: 45,
-    attackCooldown: 800,
-    spawnCooldown: 4000,
+    name: 'Sworder',
+    icon: 'fas fa-khanda',
+    cost: 200,
+    hp: 362,
+    damage: 24,
+    speed: 5, 
+    range: 55,
+    attackCooldown: 1000,
+    spawnCooldown: 6900, 
     unlockLevel: 3,
-    description: 'High-damage melee unit. Slashes through red tape and competitors.',
+    description: 'Melee specialist wielding a corporate letter opener. High attack speed and solid damage.',
     altForm: {
-      name: 'Senior Partner',
-      hp: 450,
-      damage: 65,
-      speed: 3,
-      range: 50,
-      attackCooldown: 900,
-      cost: 250,
-      description: 'Years of litigation have hardened them. High damage and decent health.'
+      name: 'Blacksteel',
+      hp: 362,
+      damage: 72,
+      speed: 5, 
+      range: 85,
+      attackCooldown: 3000,
+      cost: 200,
+      description: 'Wielding a reinforced industrial shredder blade. Slow strikes, but they cut deep through red tape.'
     }
   },
   {
     id: 'pistoler',
-    name: 'Sales Rep',
-    icon: 'fas fa-bullhorn',
-    cost: 175,
-    hp: 200,
-    damage: 25,
-    speed: 2.5,
-    range: 220,
-    attackCooldown: 1200,
-    spawnCooldown: 5000,
+    name: 'Pistoler',
+    icon: 'fas fa-gun',
+    cost: 200,
+    hp: 185,
+    damage: 31,
+    speed: 1.9, 
+    range: 350,
+    attackCooldown: 1250,
+    spawnCooldown: 4600, 
     unlockLevel: 4,
-    description: 'Ranged attacker. Pepper enemies with high-volume calls.',
+    description: 'Mid-range firearm specialist. Delivers consistent high-velocity damage from a distance.',
     altForm: {
-      name: 'Account Exec',
-      hp: 250,
-      damage: 40,
+      name: 'SMG Gunner',
+      hp: 185,
+      damage: 31,
+      speed: 1.9, 
+      range: 350,
+      attackCooldown: 500,
+      cost: 400,
+      description: 'Trades budget for fire rate. Wields a submachine gun for rapid suppression.'
+    }
+  },
+  {
+    id: 'cola_thrower',
+    name: 'Explosive Cola',
+    icon: 'fas fa-wine-bottle',
+    cost: 250,
+    hp: 350,
+    damage: 12,
+    speed: 2.5,
+    range: 200,
+    attackCooldown: 1500, 
+    spawnCooldown: 4000,
+    unlockLevel: 100, 
+    description: 'Throws a cola that explodes with MASSIVE knockback to clear the path.',
+    altForm: {
+      name: 'Cola Spray',
+      hp: 350,
+      damage: 10,
       speed: 2.5,
-      range: 250,
-      attackCooldown: 1400,
-      cost: 275,
-      description: 'Armed with a customized presentation and a sharp tongue.'
+      range: 150,
+      attackCooldown: 1200,
+      cost: 350,
+      description: 'Sprays pressurized cola. Pushes enemies back and deals 15% more damage per hit (max 14 stacks).'
+    }
+  },
+  {
+    id: 'retro_battler',
+    name: 'Retro Battler',
+    icon: 'fas fa-gamepad',
+    cost: 235,
+    hp: 489, // Sworder (362) * 1.35
+    damage: 32, // Sworder (24) * 1.35
+    speed: 5, 
+    range: 55, 
+    attackCooldown: 1000, 
+    spawnCooldown: 6900, 
+    unlockLevel: 100, 
+    description: 'A 8-bit warrior lost in time. Deals 35% more damage than modern melee counterparts.',
+    altForm: {
+      name: 'Retro Gunner',
+      hp: 250, // Pistoler (185) * 1.35
+      damage: 42, // Pistoler (31) * 1.35
+      speed: 1.9, 
+      range: 350, 
+      attackCooldown: 1250, 
+      cost: 305,
+      description: 'Swapped the pixel sword for a low-res blaster. 35% stronger than standard firearm units.'
     }
   },
   {
     id: 'guard',
-    name: 'Compliance Officer',
-    icon: 'fas fa-user-check',
-    cost: 350,
-    hp: 1200,
-    damage: 15,
-    speed: 1.2,
-    range: 40,
-    attackCooldown: 2000,
-    spawnCooldown: 10000,
-    unlockLevel: 6,
-    description: 'Heavy armor unit. Slow but nearly indestructible.',
+    name: 'Security',
+    icon: 'fas fa-shield-halved',
+    cost: 550,
+    hp: 2013,
+    damage: 40,
+    speed: 2, 
+    range: 45,
+    attackCooldown: 1200,
+    spawnCooldown: 17250, 
+    unlockLevel: 4,
+    description: 'Elite defensive personnel. Solid stats across the board.'
   },
   {
     id: 'engineer',
-    name: 'Dev Ops',
-    icon: 'fas fa-code',
-    cost: 400,
-    hp: 400,
-    damage: 80,
-    speed: 2,
-    range: 180,
-    attackCooldown: 3000,
-    spawnCooldown: 15000,
-    unlockLevel: 8,
-    description: 'Burst damage specialist. Launches critical updates.',
+    name: 'Lead Dev',
+    icon: 'fas fa-laptop-code',
+    cost: 950,
+    hp: 483,
+    damage: 201,
+    speed: 3, 
+    range: 400,
+    attackCooldown: 2500,
+    spawnCooldown: 28750, 
+    unlockLevel: 5,
+    description: 'Long-range specialist. Delivers massive critical updates from afar.'
   },
   {
     id: 'ceo',
-    name: 'The Founder',
-    icon: 'fas fa-crown',
-    cost: 800,
-    hp: 2500,
-    damage: 150,
-    speed: 1,
-    range: 60,
+    name: 'The CEO',
+    icon: 'fas fa-user-tie',
+    cost: 3000,
+    hp: 5233,
+    damage: 604,
+    speed: 1.2,
+    range: 150,
     attackCooldown: 3500,
-    spawnCooldown: 45000,
-    unlockLevel: 10,
-    description: 'The ultimate leadership asset. High impact, high cost.',
+    spawnCooldown: 69000, 
+    unlockLevel: 5,
+    description: 'Corporate God. Immense health and world-ending damage.'
   }
 ];
 
 export const ENEMY_UNITS: UnitType[] = [
   {
     id: 'e_battler',
-    name: 'Office Drone',
-    icon: 'fas fa-user-tie',
-    cost: 40,
-    hp: 120,
-    damage: 12,
-    speed: 3,
+    name: 'Battler',
+    icon: 'custom-battler',
+    cost: 80,
+    hp: 170,
+    damage: 18,
+    speed: 3.5, 
     range: 40,
-    attackCooldown: 1200,
-    spawnCooldown: 3000,
-    description: 'A standard employee driven by coffee and despair.',
-    unlockLevel: 1
+    attackCooldown: 1010,
+    spawnCooldown: 3000, 
+    unlockLevel: 0,
+    description: 'A standard human combatant with a distinct red, blue, and yellow uniform.'
   },
   {
     id: 'e_double_puncher',
-    name: 'Middle Manager',
-    icon: 'fas fa-user-friends',
-    cost: 120,
-    hp: 350,
-    damage: 25,
-    speed: 2,
-    range: 45,
-    attackCooldown: 1800,
-    spawnCooldown: 6000,
-    description: 'Double the hands, double the micromanagement.',
-    unlockLevel: 2
-  },
-  {
-    id: 'e_builder',
-    name: 'Facility Manager',
-    icon: 'fas fa-tools',
+    name: 'Double Puncher Battler',
+    icon: 'custom-battler-heavy',
     cost: 150,
-    hp: 400,
-    damage: 5,
-    speed: 1.2,
-    range: 35,
-    attackCooldown: 2000,
-    spawnCooldown: 15000,
-    description: 'Constructs physical barriers to progress.',
-    unlockLevel: 3
-  },
-  {
-    id: 'e_pistoler',
-    name: 'Corporate Security',
-    icon: 'fas fa-gun',
-    cost: 180,
-    hp: 200,
-    damage: 30,
-    speed: 2.5,
-    range: 250,
-    attackCooldown: 1500,
-    spawnCooldown: 8000,
-    description: 'Enforces policy from a safe distance.',
-    unlockLevel: 4
-  },
-  {
-    id: 'e_rage_battler',
-    name: 'Burnout Victim',
-    icon: 'fas fa-fire',
-    cost: 250,
-    hp: 500,
-    damage: 40,
-    speed: 4.5,
+    hp: 225,
+    damage: 36,
+    speed: 2.5, 
     range: 40,
-    attackCooldown: 800,
-    spawnCooldown: 10000,
-    description: 'Has nothing left to lose. Aggression scales with damage.',
-    unlockLevel: 5
-  },
-  {
-    id: 'e_baller',
-    name: 'Executive VP',
-    icon: 'fas fa-basketball-ball',
-    cost: 300,
-    hp: 600,
-    damage: 20,
-    speed: 1.8,
-    range: 60,
-    attackCooldown: 2500,
-    spawnCooldown: 12000,
-    description: 'Knocks back anyone who questions the vision.',
-    unlockLevel: 7
+    attackCooldown: 1500,
+    spawnCooldown: 6000, 
+    unlockLevel: 0,
+    description: 'A heavy hitter with a 1-2 punch combo.'
   },
   {
     id: 'e_fourth_puncher',
-    name: 'Efficiency Consultant',
-    icon: 'fas fa-hands',
-    cost: 400,
-    hp: 800,
-    damage: 50,
-    speed: 1.5,
+    name: 'Fourth Puncher Battler',
+    icon: 'custom-battler-heavy',
+    cost: 350,
+    hp: 550,
+    damage: 72,
+    speed: 2.5, 
+    range: 40,
+    attackCooldown: 1500,
+    spawnCooldown: 9000, 
+    unlockLevel: 0,
+    description: 'A multi-tasking monstrosity with two extra arms growing from its back.'
+  },
+  {
+    id: 'e_enforcer',
+    name: 'Enforcer',
+    icon: 'fas fa-user-ninja',
+    cost: 450,
+    hp: 780,
+    damage: 73,
+    speed: 1.7,
+    range: 60,
+    attackCooldown: 1300,
+    spawnCooldown: 12000,
+    unlockLevel: 0,
+    description: 'Street bruiser. Tough, intimidating, no office nonsense.'
+  },
+  {
+    id: 'e_pistoler',
+    name: 'Enemy Pistoler',
+    icon: 'fas fa-gun',
+    cost: 200,
+    hp: 230,
+    damage: 38,
+    speed: 1.8, 
+    range: 350,
+    attackCooldown: 1250,
+    spawnCooldown: 4000, 
+    unlockLevel: 0,
+    description: 'Provides ranged support for the enemy lines.'
+  },
+  {
+    id: 'e_builder',
+    name: 'Builder',
+    icon: 'fas fa-hammer',
+    cost: 300,
+    hp: 400,
+    damage: 10,
+    speed: 2,
     range: 50,
     attackCooldown: 2000,
-    spawnCooldown: 15000,
-    description: 'Four arms of pure synergy.',
-    unlockLevel: 11
-  },
-  {
-    id: 'e_cake_thrower',
-    name: 'HR Celebrant',
-    icon: 'fas fa-birthday-cake',
-    cost: 350,
-    hp: 450,
-    damage: 30,
-    speed: 2,
-    range: 150,
-    attackCooldown: 4000,
-    spawnCooldown: 14000,
-    description: 'Stuns units with forced birthday celebrations.',
-    unlockLevel: 13
-  },
-  {
-    id: 'e_boss_shotgunner',
-    name: 'The Shareholder',
-    icon: 'fas fa-skull-crossbones',
-    cost: 1000,
-    hp: 6563,
-    damage: 100,
-    speed: 0.8,
-    range: 180,
-    attackCooldown: 2500,
-    spawnCooldown: 0,
-    description: 'Demands quarterly growth at any cost. Multiphase threat.',
-    unlockLevel: 10
+    spawnCooldown: 15000, 
+    unlockLevel: 0,
+    description: 'A construction worker who builds defensive walls.'
   },
   {
     id: 'e_wall',
-    name: 'Bureaucratic Wall',
-    icon: 'fas fa-border-all',
-    cost: 0,
-    hp: 1500,
+    name: 'Wall',
+    icon: 'fas fa-square',
+    cost: 10,
+    hp: 335,
     damage: 0,
     speed: 0,
     range: 0,
-    attackCooldown: 0,
-    spawnCooldown: 0,
-    description: 'A literal wall of paperwork.',
-    unlockLevel: 3
+    attackCooldown: 1000,
+    spawnCooldown: 1000,
+    unlockLevel: 0,
+    description: 'A stationary wall built by Builders.'
+  },
+  {
+    id: 'e_rage_battler',
+    name: 'Rage Battler',
+    icon: 'fas fa-angry',
+    cost: 150,
+    hp: 350,
+    damage: 55,
+    speed: 7, 
+    range: 40,
+    attackCooldown: 500,
+    spawnCooldown: 5000, 
+    unlockLevel: 0,
+    description: 'A furious combatant who attacks rapidly when provoked.'
+  },
+  {
+    id: 'e_baller',
+    name: 'Baller Battler',
+    icon: 'fas fa-basketball-ball',
+    cost: 250,
+    hp: 230,
+    damage: 40,
+    speed: 1.8, 
+    range: 400,
+    attackCooldown: 3500,
+    spawnCooldown: 8000, 
+    unlockLevel: 0,
+    description: 'A stylish unit with extra range that knocks enemies back.'
+  },
+  {
+    id: 'e_cake_thrower',
+    name: 'Cake Thrower',
+    icon: 'fas fa-birthday-cake',
+    cost: 200,
+    hp: 250,
+    damage: 20,
+    speed: 3, 
+    range: 250,
+    attackCooldown: 1000,
+    spawnCooldown: 8000,
+    unlockLevel: 0,
+    description: 'Carries a massive cake. Throws it once to stun enemies for 3s, then fights with bare hands.'
+  },
+  {
+    id: 'e_boss_shotgunner',
+    name: 'Shotgunner (BOSS)',
+    icon: 'fas fa-skull',
+    cost: 9999,
+    hp: 6563, 
+    damage: 210, 
+    speed: 0.8, 
+    range: 200,
+    attackCooldown: 2500,
+    spawnCooldown: 60000, 
+    unlockLevel: 0,
+    description: 'The Corporate Enforcer. Wields a shotgun and an attitude problem.'
   }
 ];
