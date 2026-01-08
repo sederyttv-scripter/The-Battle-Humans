@@ -68,6 +68,8 @@ export interface GameState {
   cannonLevel: number;
   bankLevel: number;
   startingBudgetLevel: number;
+  baseHealthLevel: number; // New upgrade level for Player Base Health
   sandboxMode: boolean;
   sandboxPaused: boolean;
+  pityCounter: number; // Tracks pulls since last Uber Rare
 }

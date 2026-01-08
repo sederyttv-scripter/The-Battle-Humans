@@ -1,5 +1,5 @@
 
-import { UnitType } from './types';
+import type { UnitType } from './types';
 
 export const GAME_VERSION = '1.7.5';
 
@@ -27,6 +27,11 @@ export const BANK_UPGRADE_BASE_COST = 100;
 export const BANK_UPGRADE_COST_MULTIPLIER = 1.30; 
 export const BASE_BANK_INCOME_PER_TICK = 0.75; 
 export const BANK_INCOME_GAIN_PER_LEVEL = 0.50; 
+
+export const INITIAL_PLAYER_BASE_HP = 500;
+export const BASE_HEALTH_UPGRADE_BASE_COST = 250;
+export const BASE_HEALTH_UPGRADE_COST_MULTIPLIER = 1.45;
+export const BASE_HEALTH_GAIN_PER_LEVEL = 450;
 
 export const CANNON_COOLDOWN = 30000;
 export const CANNON_BASE_DAMAGE = 50;
@@ -57,6 +62,7 @@ export const STAGE_CONFIG = [
   { id: 13, name: "Cake Thrower", subtitle: "Sweet Surprise", icon: "fas fa-birthday-cake", color: "from-pink-600 to-purple-900" },
   { id: 14, name: "Stunlocking", subtitle: "Builder, Baller, Battler & Cake Thrower", icon: "fas fa-bolt", color: "from-purple-900/80 to-pink-700/80" },
   { id: 15, name: "Alley Ambush", subtitle: "Nowhere to Run", icon: "fas fa-road", color: "from-zinc-800 to-stone-950" },
+  { id: 16, name: "Street Holdout", subtitle: "Urban Blockade", icon: "fas fa-road", color: "from-gray-800 to-gray-950" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -185,8 +191,8 @@ export const PLAYER_UNITS: UnitType[] = [
     name: 'Retro Battler',
     icon: 'fas fa-gamepad',
     cost: 235,
-    hp: 489, // Sworder (362) * 1.35
-    damage: 32, // Sworder (24) * 1.35
+    hp: 489, 
+    damage: 32, 
     speed: 5, 
     range: 55, 
     attackCooldown: 1000, 
@@ -195,13 +201,37 @@ export const PLAYER_UNITS: UnitType[] = [
     description: 'A 8-bit warrior lost in time. Deals 35% more damage than modern melee counterparts.',
     altForm: {
       name: 'Retro Gunner',
-      hp: 250, // Pistoler (185) * 1.35
-      damage: 42, // Pistoler (31) * 1.35
+      hp: 250,
+      damage: 42,
       speed: 1.9, 
       range: 350, 
       attackCooldown: 1250, 
       cost: 305,
       description: 'Swapped the pixel sword for a low-res blaster. 35% stronger than standard firearm units.'
+    }
+  },
+  {
+    id: 'grappler',
+    name: 'Iron Grappler',
+    icon: 'fas fa-link',
+    cost: 550,
+    hp: 600,
+    damage: 15,
+    speed: 3, 
+    range: 250, 
+    attackCooldown: 10000, 
+    spawnCooldown: 15000, 
+    unlockLevel: 100, 
+    description: 'Fires a mechanical hook to pull and stun (1s) a non-boss enemy. Great for setting up combos.',
+    altForm: {
+      name: 'Twin Grapplers',
+      hp: 600,
+      damage: 12,
+      speed: 3, 
+      range: 250, 
+      attackCooldown: 8500, 
+      cost: 550,
+      description: 'Fires two hooks to pull up to two enemies individually. Moves 20% slower due to weight.'
     }
   },
   {
@@ -385,7 +415,7 @@ export const ENEMY_UNITS: UnitType[] = [
     speed: 3, 
     range: 250,
     attackCooldown: 1000,
-    spawnCooldown: 8000,
+    spawnCooldown: 8000, 
     unlockLevel: 0,
     description: 'Carries a massive cake. Throws it once to stun enemies for 3s, then fights with bare hands.'
   },

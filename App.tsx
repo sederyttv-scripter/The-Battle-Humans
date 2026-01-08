@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { GameState, ActiveUnit, Side, UnitType, Screen, AltForm } from './types';
+import type { GameState, ActiveUnit, Side, UnitType, Screen, AltForm } from './types';
 import { 
   PLAYER_UNITS, 
   ENEMY_UNITS, 
@@ -32,13 +31,17 @@ import {
   STARTING_BUDGET_GAIN_PER_LEVEL, 
   STARTING_BUDGET_UPGRADE_BASE_COST, 
   STARTING_BUDGET_UPGRADE_COST_MULTIPLIER,
+  INITIAL_PLAYER_BASE_HP,
+  BASE_HEALTH_UPGRADE_BASE_COST,
+  BASE_HEALTH_UPGRADE_COST_MULTIPLIER,
+  BASE_HEALTH_GAIN_PER_LEVEL,
   STAGE_CONFIG,
   BOSS_STAGE_IDS,
   GACHA_COST
 } from './constants';
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
-import { StageSelectionScreen, evaluateStageSpawns } from './stage';
+import { StageSelectionScreen, evaluateStageSpawns, type StageContext } from './stage';
 import { GameAssistant } from './components/GameAssistant';
 
 // --- Storage Helpers (Cookies) ---
@@ -69,7 +72,8 @@ const clearAllGameData = () => {
   const keys = [
     'bh_level', 'bh_xp', 'bh_coins', 'bh_diamonds', 'bh_unit_levels', 
     'bh_preferred_forms', 'bh_loadout', 'bh_stages', 'bh_boss_claims',
-    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_version'
+    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_base_health_level', 'bh_version',
+    'bh_pity'
   ];
   keys.forEach(deleteCookie);
 };
@@ -106,20 +110,7 @@ const BattlerVisual: React.FC<{
   const isThrowingCake = typeId === 'e_cake_thrower' && lastAbilityTime && (now - lastAbilityTime < 600);
   const isThrowingCola = typeId === 'cola_thrower' && isAttacking;
   
-  if (typeId === 'e_wall') {
-    return (
-      <div className={`w-14 h-16 bg-gradient-to-br from-amber-800 to-amber-950 border-2 border-amber-950 rounded shadow-2xl relative flex flex-col justify-evenly p-0.5 overflow-hidden ${scale}`}>
-        {/* Brick Pattern */}
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="flex gap-0.5 h-[20%] opacity-80">
-             <div className={`${i % 2 === 0 ? 'flex-1' : 'w-1/3'} bg-amber-700/50 border-r border-black/20`}></div>
-             <div className="flex-1 bg-amber-700/50 border-r border-black/20"></div>
-             <div className={`${i % 2 === 0 ? 'flex-1' : 'w-1/3'} bg-amber-700/50`}></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // --- HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP ---
 
   const idleAnimationClass = useMemo(() => {
     if (!isAlmanac && !isStunned) return '';
@@ -136,63 +127,11 @@ const BattlerVisual: React.FC<{
       case 'e_cake_thrower': return 'animate-idle-sway';
       case 'e_enforcer': return 'animate-idle-aggressive';
       case 'cola_thrower': return 'animate-idle-fidget';
-      case 'retro_battler': return 'animate-step-jump'; // New Retro animation
+      case 'retro_battler': return 'animate-step-jump'; 
+      case 'grappler': return 'animate-idle-breathing';
       default: return 'animate-idle-gentle';
     }
   }, [typeId, isAlmanac, isStunned]);
-
-  // Special Rendering for Retro Battler (8-bit)
-  if (typeId === 'retro_battler') {
-      const isGunner = isAltForm;
-      return (
-        <div className={`relative transition-transform duration-100 ${scale} ${isAttacking ? 'animate-vibrate' : idleAnimationClass}`}>
-            {isStunned && (
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-4 flex justify-center gap-1 z-30">
-                   <div className="w-2 h-2 bg-yellow-400 animate-spin"></div>
-                   <div className="w-2 h-2 bg-yellow-400 animate-spin delay-75"></div>
-                </div>
-            )}
-            
-            <div className="flex flex-col items-center">
-                {/* 8-bit Head */}
-                <div className="w-6 h-6 bg-[#fccb95] border-4 border-black relative z-10 box-border">
-                   {isGunner && <div className="absolute top-1 left-0 w-full h-2 bg-black opacity-80"></div>} {/* Sunglasses */}
-                   {!isGunner && (
-                       <>
-                           <div className="absolute top-2 left-1 w-1 h-1 bg-black"></div>
-                           <div className="absolute top-2 right-1 w-1 h-1 bg-black"></div>
-                       </>
-                   )}
-                </div>
-                {/* 8-bit Torso */}
-                <div className={`w-6 h-5 ${isGunner ? 'bg-purple-600' : 'bg-green-600'} border-x-4 border-black relative box-border`}>
-                   {/* Belt */}
-                   <div className="absolute bottom-0 w-full h-1 bg-black/50"></div>
-                </div>
-                {/* 8-bit Legs */}
-                <div className="flex gap-1">
-                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
-                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
-                </div>
-            </div>
-
-            {/* Weapons */}
-            {isGunner ? (
-                // Pixel Gun
-                <div className={`absolute top-4 -right-5 w-6 h-3 bg-gray-400 border-2 border-black origin-left ${isAttacking ? 'translate-x-1' : ''}`}>
-                    <div className="absolute -top-1 right-0 w-1 h-2 bg-black"></div>
-                    {isAttacking && <div className="absolute right-[-4px] top-0 w-2 h-2 bg-yellow-400"></div>}
-                </div>
-            ) : (
-                // Pixel Sword
-                <div className={`absolute top-2 -right-5 w-2 h-8 bg-gray-300 border-2 border-black origin-bottom transition-transform ${isAttacking ? 'rotate-90' : 'rotate-12'}`}>
-                   <div className="absolute top-0 -left-1 w-4 h-1 bg-gray-300 border-2 border-black"></div>
-                   <div className="absolute bottom-0 left-0 w-full h-2 bg-amber-800"></div>
-                </div>
-            )}
-        </div>
-      );
-  }
 
   const accessories = useMemo(() => {
     switch(typeId) {
@@ -242,6 +181,27 @@ const BattlerVisual: React.FC<{
               <div className="absolute -right-8 top-3.5 w-3 h-1 bg-yellow-400/80 rounded-full animate-ping z-20"></div>
             </>
           )}
+        </>
+      );
+      case 'grappler': return (
+        <>
+           {/* Head Visor */}
+           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-4 bg-slate-500 rounded-sm border border-slate-400 shadow-sm z-10">
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-cyan-400 shadow-[0_0_5px_cyan]"></div>
+           </div>
+           
+           {/* Grappling Hooks */}
+           {/* Arm 1 (Right) */}
+           <div className={`absolute top-2 -right-4 w-10 h-2 bg-slate-600 rounded-full origin-left transition-transform duration-200 ${isAttacking ? 'scale-x-150' : 'rotate-12'}`}>
+              <div className="absolute -right-1 top-[-3px] w-3 h-3 border-2 border-slate-300 rounded-full border-l-transparent rotate-45"></div>
+           </div>
+
+           {/* Arm 2 (Left) - Only for Alt Form */}
+           {isAltForm && (
+             <div className={`absolute top-2 -left-4 w-10 h-2 bg-slate-600 rounded-full origin-right transition-transform duration-200 ${isAttacking ? 'scale-x-150' : '-rotate-12'}`}>
+                <div className="absolute -left-1 top-[-3px] w-3 h-3 border-2 border-slate-300 rounded-full border-r-transparent -rotate-45"></div>
+             </div>
+           )}
         </>
       );
       case 'cola_thrower':
@@ -391,6 +351,76 @@ const BattlerVisual: React.FC<{
       default: return null;
     }
   }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake, isThrowingCake]);
+
+  // --- CONDITIONAL RETURNS MUST BE AFTER HOOKS ---
+
+  if (typeId === 'e_wall') {
+    return (
+      <div className={`w-14 h-16 bg-gradient-to-br from-amber-800 to-amber-950 border-2 border-amber-950 rounded shadow-2xl relative flex flex-col justify-evenly p-0.5 overflow-hidden ${scale}`}>
+        {/* Brick Pattern */}
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex gap-0.5 h-[20%] opacity-80">
+             <div className={`${i % 2 === 0 ? 'flex-1' : 'w-1/3'} bg-amber-700/50 border-r border-black/20`}></div>
+             <div className="flex-1 bg-amber-700/50 border-r border-black/20"></div>
+             <div className={`${i % 2 === 0 ? 'flex-1' : 'w-1/3'} bg-amber-700/50`}></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Special Rendering for Retro Battler (8-bit)
+  if (typeId === 'retro_battler') {
+      const isGunner = isAltForm;
+      return (
+        <div className={`relative transition-transform duration-100 ${scale} ${isAttacking ? 'animate-vibrate' : idleAnimationClass}`}>
+            {isStunned && (
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-4 flex justify-center gap-1 z-30">
+                   <div className="w-2 h-2 bg-yellow-400 animate-spin"></div>
+                   <div className="w-2 h-2 bg-yellow-400 animate-spin delay-75"></div>
+                </div>
+            )}
+            
+            <div className="flex flex-col items-center">
+                {/* 8-bit Head */}
+                <div className="w-6 h-6 bg-[#fccb95] border-4 border-black relative z-10 box-border">
+                   {isGunner && <div className="absolute top-1 left-0 w-full h-2 bg-black opacity-80"></div>} {/* Sunglasses */}
+                   {!isGunner && (
+                       <>
+                           <div className="absolute top-2 left-1 w-1 h-1 bg-black"></div>
+                           <div className="absolute top-2 right-1 w-1 h-1 bg-black"></div>
+                       </>
+                   )}
+                </div>
+                {/* 8-bit Torso */}
+                <div className={`w-6 h-5 ${isGunner ? 'bg-purple-600' : 'bg-green-600'} border-x-4 border-black relative box-border`}>
+                   {/* Belt */}
+                   <div className="absolute bottom-0 w-full h-1 bg-black/50"></div>
+                </div>
+                {/* 8-bit Legs */}
+                <div className="flex gap-1">
+                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
+                   <div className="w-2 h-3 bg-blue-800 border-4 border-black border-t-0 box-border"></div>
+                </div>
+            </div>
+
+            {/* Weapons */}
+            {isGunner ? (
+                // Pixel Gun
+                <div className={`absolute top-4 -right-5 w-6 h-3 bg-gray-400 border-2 border-black origin-left ${isAttacking ? 'translate-x-1' : ''}`}>
+                    <div className="absolute -top-1 right-0 w-1 h-2 bg-black"></div>
+                    {isAttacking && <div className="absolute right-[-4px] top-0 w-2 h-2 bg-yellow-400"></div>}
+                </div>
+            ) : (
+                // Pixel Sword
+                <div className={`absolute top-2 -right-5 w-2 h-8 bg-gray-300 border-2 border-black origin-bottom transition-transform ${isAttacking ? 'rotate-90' : 'rotate-12'}`}>
+                   <div className="absolute top-0 -left-1 w-4 h-1 bg-gray-300 border-2 border-black"></div>
+                   <div className="absolute bottom-0 left-0 w-full h-2 bg-amber-800"></div>
+                </div>
+            )}
+        </div>
+      );
+  }
 
   return (
     <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' || typeId === 'e_fourth_puncher' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>

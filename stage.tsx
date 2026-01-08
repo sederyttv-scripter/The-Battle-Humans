@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { STAGE_CONFIG, ENEMY_UNITS } from './constants';
-import { ActiveUnit } from './types';
+import type { ActiveUnit } from './types';
 
 // --- UI Component: Stage Selection ---
 
@@ -103,8 +103,40 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return (enemyCooldowns[unitId] || 0) === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 16: Street Holdout
+  if (stageId === 16) {
+     // HEAVY HITTERS PRIORITY
+     // Enforcers (Heavy) - Spawn if affordable, higher cooldown
+     if (canSpawn('e_enforcer')) {
+         return { unitId: 'e_enforcer', cooldown: 18000 };
+     } 
+     // Fourth Puncher (Heavy)
+     else if (canSpawn('e_fourth_puncher')) {
+         return { unitId: 'e_fourth_puncher', cooldown: 14000 };
+     } 
+     
+     // BACKLINE SUPPORT
+     // Baller - Sustained pressure
+     else if (canSpawn('e_baller')) {
+         return { unitId: 'e_baller', cooldown: 12000 };
+     } 
+     // Pistoler - Constant ranged fire
+     else if (canSpawn('e_pistoler')) {
+         return { unitId: 'e_pistoler', cooldown: 9000 };
+     }
+
+     // FRONTLINE FLOOD (Lower priority but higher frequency due to lower cost/cooldown)
+     // Double Puncher - Aggressive soaking
+     else if (canSpawn('e_double_puncher')) {
+         return { unitId: 'e_double_puncher', cooldown: 5000 };
+     } 
+     // Battler - Cannon fodder
+     else if (canSpawn('e_battler')) {
+         return { unitId: 'e_battler', cooldown: 2000 };
+     }
+  }
   // STAGE 15: Alley Ambush
-  if (stageId === 15) {
+  else if (stageId === 15) {
      // Initial Rush of Battlers to soak damage
      if (timeElapsed < 20000) {
         if (canSpawn('e_battler')) {
