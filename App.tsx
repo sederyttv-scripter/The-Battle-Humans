@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import type { GameState, ActiveUnit, Side, UnitType, Screen, AltForm } from './types';
+import { GameState, ActiveUnit, Side, UnitType, Screen, AltForm } from './types';
 import { 
   PLAYER_UNITS, 
   ENEMY_UNITS, 
@@ -31,17 +31,13 @@ import {
   STARTING_BUDGET_GAIN_PER_LEVEL, 
   STARTING_BUDGET_UPGRADE_BASE_COST, 
   STARTING_BUDGET_UPGRADE_COST_MULTIPLIER,
-  INITIAL_PLAYER_BASE_HP,
-  BASE_HEALTH_UPGRADE_BASE_COST,
-  BASE_HEALTH_UPGRADE_COST_MULTIPLIER,
-  BASE_HEALTH_GAIN_PER_LEVEL,
   STAGE_CONFIG,
   BOSS_STAGE_IDS,
   GACHA_COST
 } from './constants';
 import { generateBattleCommentary } from './services/geminiService';
 import { sounds } from './services/soundService';
-import { StageSelectionScreen, evaluateStageSpawns, type StageContext } from './stage';
+import { StageSelectionScreen, evaluateStageSpawns } from './stage';
 import { GameAssistant } from './components/GameAssistant';
 
 // --- Storage Helpers (Cookies) ---
@@ -72,7 +68,7 @@ const clearAllGameData = () => {
   const keys = [
     'bh_level', 'bh_xp', 'bh_coins', 'bh_diamonds', 'bh_unit_levels', 
     'bh_preferred_forms', 'bh_loadout', 'bh_stages', 'bh_boss_claims',
-    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_base_health_level', 'bh_version',
+    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_version',
     'bh_pity'
   ];
   keys.forEach(deleteCookie);
@@ -129,6 +125,10 @@ const BattlerVisual: React.FC<{
       case 'cola_thrower': return 'animate-idle-fidget';
       case 'retro_battler': return 'animate-step-jump'; 
       case 'grappler': return 'animate-idle-breathing';
+      case 'megaphone': return 'animate-idle-breathing';
+      case 'e_tactical_trooper': return 'animate-idle-breathing';
+      case 'e_sniper': return 'animate-idle-gentle';
+      case 'e_heavy_gunner': return 'animate-idle-aggressive';
       default: return 'animate-idle-gentle';
     }
   }, [typeId, isAlmanac, isStunned]);
@@ -202,6 +202,18 @@ const BattlerVisual: React.FC<{
                 <div className="absolute -left-1 top-[-3px] w-3 h-3 border-2 border-slate-300 rounded-full border-r-transparent -rotate-45"></div>
              </div>
            )}
+        </>
+      );
+      case 'megaphone': return (
+        <>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-gray-300 rounded-full border border-gray-500 z-10 flex items-center justify-center">
+                <i className={`fas fa-bullhorn text-xs ${isAltForm ? 'text-red-500' : 'text-slate-700'}`}></i>
+            </div>
+            {isAttacking && (
+                <div className={`absolute top-0 ${isAlly ? '-right-8' : '-left-8'} w-8 h-8 opacity-50 animate-ping`}>
+                    <i className="fas fa-rss text-yellow-400"></i>
+                </div>
+            )}
         </>
       );
       case 'cola_thrower':
@@ -348,9 +360,64 @@ const BattlerVisual: React.FC<{
            <div className={`absolute top-2 -right-4 w-10 h-1.5 bg-gray-400 border border-gray-600 rounded-full origin-left transition-transform ${isAttacking ? 'rotate-[-20deg] translate-y-4' : '-rotate-[100deg]'}`}></div>
         </>
       );
+      case 'e_tactical_trooper': return (
+        <>
+           {/* Helmet */}
+           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-5 bg-emerald-900 rounded-t-md z-10 border border-emerald-950">
+              <div className="absolute bottom-1 left-0 right-0 h-1 bg-black opacity-50"></div>
+           </div>
+           {/* Night Vision Goggles (Up) */}
+           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-4 h-2 bg-black border border-green-500 rounded-sm z-20">
+              <div className="flex justify-center gap-0.5 h-full items-center">
+                  <div className="w-1 h-1 bg-green-400 rounded-full"></div>
+                  <div className="w-1 h-1 bg-green-400 rounded-full"></div>
+              </div>
+           </div>
+           
+           {/* Rifle */}
+           <div className={`absolute top-3 -left-5 w-12 h-2.5 bg-black rounded-sm border border-zinc-700 origin-right transition-transform ${isAttacking ? 'translate-x-1' : ''}`}>
+               <div className="absolute -left-1 top-0 w-1 h-2.5 bg-zinc-500"></div> {/* Muzzle */}
+               <div className="absolute right-2 top-2.5 w-1 h-2 bg-black"></div> {/* Mag */}
+           </div>
+        </>
+      );
+      case 'e_sniper': return (
+        <>
+           {/* Hood */}
+           <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 bg-stone-800 rounded-full z-10 shadow-sm border border-stone-900"></div>
+           <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-5 h-2 bg-black z-20"></div> {/* Mask */}
+           
+           {/* Long Rifle */}
+           <div className={`absolute top-2 -left-8 w-16 h-2 bg-stone-900 border border-black origin-right transition-transform ${isAttacking ? '-translate-x-2' : ''}`}>
+              <div className="absolute left-4 -top-2 w-4 h-1 bg-black"></div> {/* Scope */}
+              <div className="absolute -left-1 top-[-1px] w-2 h-3 bg-black"></div> {/* Muzzle Brake */}
+           </div>
+           
+           {/* Ghillie bits */}
+           <div className="absolute top-0 -right-2 w-3 h-6 bg-stone-700/80 rounded-full -z-10 rotate-12"></div>
+        </>
+      );
+      case 'e_heavy_gunner': return (
+        <>
+           {/* Heavy Helmet */}
+           <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 bg-slate-800 rounded-sm border-2 border-slate-600 z-10">
+               <div className="absolute top-2 left-1/2 -translate-x-1/2 w-5 h-1.5 bg-black/80"></div> {/* Visor slit */}
+           </div>
+           
+           {/* Minigun */}
+           <div className={`absolute top-3 -left-6 w-12 h-6 bg-slate-900 rounded-lg border border-slate-600 origin-right ${isAttacking ? 'animate-vibrate' : ''}`}>
+               <div className="absolute -left-2 top-1 w-2 h-4 bg-slate-500 border border-black animate-spin"></div> {/* Barrels */}
+               <div className="absolute right-0 top-6 w-8 h-8 bg-yellow-900/50 rounded-full -z-10 blur-sm"></div> {/* Ammo Box hint */}
+           </div>
+           
+           {/* Armor Padding */}
+           <div className="absolute top-0 -left-3 w-4 h-8 bg-slate-700 rounded-sm -z-10"></div>
+           <div className="absolute top-0 -right-3 w-4 h-8 bg-slate-700 rounded-sm -z-10"></div>
+        </>
+      );
       default: return null;
     }
-  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake, isThrowingCake]);
+  }, [typeId, isAttacking, isConstructing, isAltForm, hasThrownShotgun, hasThrownCake, isThrowingCake, isAlly]);
 
   // --- CONDITIONAL RETURNS MUST BE AFTER HOOKS ---
 
@@ -718,12 +785,15 @@ export default function App() {
     const savedStartingBudgetLevel = getCookie('bh_starting_budget_level');
     const savedDiamonds = getCookie('bh_diamonds');
     const savedBossClaims = getCookie('bh_boss_claims');
+    const savedPity = getCookie('bh_pity');
     
     // Default Unit Levels
     const initialUnitLevels = PLAYER_UNITS.reduce((acc, unit) => {
         acc[unit.id] = unit.unlockLevel === 1 ? 1 : 0; // Only unlock baby initially
         if (unit.id === 'cola_thrower') acc[unit.id] = 0; // Explicitly locked
         if (unit.id === 'retro_battler') acc[unit.id] = 0; // Explicitly locked
+        if (unit.id === 'grappler') acc[unit.id] = 0;
+        if (unit.id === 'megaphone') acc[unit.id] = 0;
         return acc;
     }, {} as Record<string, number>);
 
@@ -750,8 +820,10 @@ export default function App() {
       cannonLevel: savedCannonLevel ? parseInt(savedCannonLevel) : 1,
       bankLevel: savedBankLevel ? parseInt(savedBankLevel) : 1,
       startingBudgetLevel: savedStartingBudgetLevel ? parseInt(savedStartingBudgetLevel) : 1,
+      baseHealthLevel: 1,
       sandboxMode: false,
-      sandboxPaused: false
+      sandboxPaused: false,
+      pityCounter: savedPity ? parseInt(savedPity) : 0
     };
   });
 
@@ -769,7 +841,8 @@ export default function App() {
     setCookie('bh_cannon_level', gameState.cannonLevel.toString());
     setCookie('bh_bank_level', gameState.bankLevel.toString());
     setCookie('bh_starting_budget_level', gameState.startingBudgetLevel.toString());
-  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.diamonds, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.claimedBossStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel]);
+    setCookie('bh_pity', gameState.pityCounter.toString());
+  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.diamonds, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.claimedBossStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel, gameState.pityCounter]);
 
   // --- Theme Music Controller ---
   useEffect(() => {
@@ -820,7 +893,8 @@ export default function App() {
   const enemyMoneyRef = useRef(INITIAL_MONEY);
   const enemyCooldownsRef = useRef<Record<string, number>>({ 
       'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 
-      'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0
+      'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0,
+      'e_tactical_trooper': 0, 'e_sniper': 0, 'e_heavy_gunner': 0
   });
   const battleStartTimeRef = useRef(0);
 
@@ -936,16 +1010,18 @@ export default function App() {
           let unitId = '';
           let rarity = 'Rare';
           
-          if (rand < 0.05) { // 5% Uber Rare
+          // Pity Check (30th pull guarantees Uber)
+          const isPityTrigger = gameState.pityCounter >= 29;
+
+          if (isPityTrigger || rand < 0.05) { // 5% Uber Rare or Pity
              rarity = 'Uber Rare';
-             unitId = 'ceo';
+             unitId = 'grappler'; // Replaces CEO as Uber Rare
           } else if (rand < 0.30) { // 25% Super Rare
              rarity = 'Super Rare';
-             const pool = ['guard', 'engineer'];
+             const pool = ['megaphone']; // Replaced 'engineer' (Lead Dev)
              unitId = pool[Math.floor(Math.random() * pool.length)];
-          } else { // 70% Rare (NOW EXCLUSIVE ONLY: Cola Thrower & Retro Battler)
+          } else { // 70% Rare
              rarity = 'Rare';
-             // EXCLUSIVE UNITS ONLY - Removed basic units (Baby, Tank, Sworder, Pistoler)
              const pool = ['cola_thrower', 'retro_battler']; 
              unitId = pool[Math.floor(Math.random() * pool.length)];
           }
@@ -954,8 +1030,12 @@ export default function App() {
           const currentLevel = gameState.unitLevels[unitId] || 0;
           const isUnlock = currentLevel === 0;
           
+          // Reset pity if Uber Rare, else increment
+          const newPity = rarity === 'Uber Rare' ? 0 : gameState.pityCounter + 1;
+
           setGameState(p => ({
               ...p,
+              pityCounter: newPity,
               unitLevels: {
                   ...p.unitLevels,
                   [unitId]: Math.min(10, (p.unitLevels[unitId] || 0) + 1)
@@ -993,7 +1073,11 @@ export default function App() {
     setUnitLastSpawnTimes({});
     battleStartTimeRef.current = Date.now();
     enemyMoneyRef.current = INITIAL_MONEY;
-    enemyCooldownsRef.current = { 'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0 };
+    enemyCooldownsRef.current = { 
+        'e_battler': 0, 'e_double_puncher': 0, 'e_builder': 0, 'e_pistoler': 0, 
+        'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0,
+        'e_tactical_trooper': 0, 'e_sniper': 0, 'e_heavy_gunner': 0
+    };
     setShowSandboxPanel(isSandbox); // Auto open panel in sandbox
     setBossSpawned(false);
   }, []);
@@ -1253,6 +1337,37 @@ export default function App() {
                   target.stunnedUntil = now + 3000; // 3s Stun
                   sounds.playBaseHit(); // Heavy impact
               }
+              // --- MEGAPHONE MANIAC LOGIC ---
+              else if (u.typeId === 'megaphone') {
+                  sounds.playMegaphoneNoise();
+                  if (u.isAltForm) {
+                      // Earrape: Global Hit
+                      const allEnemies = newUnits.filter(t => t.side !== u.side);
+                      allEnemies.forEach(t => {
+                          const isBoss = t.typeId === 'e_boss_shotgunner';
+                          // Alt form deals small damage
+                          let dmg = actualDmg;
+                          
+                          t.currentHp -= dmg;
+                          if (!isBoss) {
+                              t.stunnedUntil = now + 3000;
+                          }
+                          // Tiny knockback
+                          t.x += (u.side === 'player' ? 1 : -1) * 5;
+                          t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
+                      });
+                  } else {
+                      // Base: Single Target
+                      target.currentHp -= actualDmg;
+                      const isBoss = target.typeId === 'e_boss_shotgunner';
+                      if (!isBoss) {
+                          target.stunnedUntil = now + 3000;
+                      }
+                      // Tiny knockback
+                      target.x += (u.side === 'player' ? 1 : -1) * 5;
+                      target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
+                  }
+              }
               // --- COLA THROWER LOGIC ---
               else if (u.typeId === 'cola_thrower') {
                  if (u.isAltForm) {
@@ -1265,9 +1380,11 @@ export default function App() {
                      target.currentHp -= finalDmg;
                      
                      // Alt Form Knockback Buff: Small push per hit
-                     const sprayKnockback = 15;
-                     target.x += (u.side === 'player' ? 1 : -1) * sprayKnockback;
-                     target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
+                     if (target.typeId !== 'e_boss_shotgunner') {
+                         const sprayKnockback = 15;
+                         target.x += (u.side === 'player' ? 1 : -1) * sprayKnockback;
+                         target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
+                     }
                  } else {
                      // Base Form: AOE Knockback
                      // Hit main target and nearby
@@ -1276,15 +1393,24 @@ export default function App() {
                      );
                      aoeTargets.forEach(t => {
                         t.currentHp -= actualDmg;
-                        const knockback = 60; // Buffed from 20 to 60 (Massive Knockback)
-                        t.x += (u.side === 'player' ? 1 : -1) * knockback;
-                        t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
+                        if (t.typeId !== 'e_boss_shotgunner') {
+                            const knockback = 60; // Buffed from 20 to 60 (Massive Knockback)
+                            t.x += (u.side === 'player' ? 1 : -1) * knockback;
+                            t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
+                        }
                      });
                  }
               }
               else {
                   // Standard Unit Attack
-                  target.currentHp -= actualDmg;
+                  let finalDmg = actualDmg;
+                  // Megaphone Alt Form Self-Debuff Logic (When GETTING hit)
+                  // But we are in the ATTACKER loop here. The attacker deals damage.
+                  // We need to check if the TARGET is a megaphone alt form.
+                  if (target.typeId === 'megaphone' && target.isAltForm) {
+                      finalDmg *= 1.3;
+                  }
+                  target.currentHp -= finalDmg;
               }
 
               // --- KNOCKBACK LOGIC ---
@@ -1658,8 +1784,9 @@ export default function App() {
                                     </>
                                 )}
                             </button>
-                            <div className="mt-4 text-xs font-bold text-cyan-400">
-                                CURRENT BALANCE: <i className="fas fa-gem ml-1"></i> {gameState.diamonds}
+                            <div className="mt-4 text-xs font-bold text-cyan-400 flex items-center justify-between w-full px-4">
+                                <div>CURRENT BALANCE: <i className="fas fa-gem ml-1"></i> {gameState.diamonds}</div>
+                                <div className="text-pink-300/50">Pity: {gameState.pityCounter}/30</div>
                             </div>
                         </>
                     ) : (

@@ -103,8 +103,34 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return (enemyCooldowns[unitId] || 0) === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 19: Heavy Ordinance
+  if (stageId === 19) {
+     if (canSpawn('e_heavy_gunner')) {
+         return { unitId: 'e_heavy_gunner', cooldown: 25000 };
+     } else if (canSpawn('e_sniper')) {
+         return { unitId: 'e_sniper', cooldown: 12000 };
+     } else if (canSpawn('e_tactical_trooper')) {
+         return { unitId: 'e_tactical_trooper', cooldown: 3000 };
+     }
+  }
+  // STAGE 18: Suppression Fire
+  else if (stageId === 18) {
+     if (canSpawn('e_heavy_gunner')) {
+         return { unitId: 'e_heavy_gunner', cooldown: 30000 };
+     } else if (canSpawn('e_tactical_trooper')) {
+         return { unitId: 'e_tactical_trooper', cooldown: 2500 };
+     }
+  }
+  // STAGE 17: Tactical Breach
+  else if (stageId === 17) {
+     if (canSpawn('e_sniper')) {
+         return { unitId: 'e_sniper', cooldown: 15000 };
+     } else if (canSpawn('e_tactical_trooper')) {
+         return { unitId: 'e_tactical_trooper', cooldown: 4000 };
+     }
+  }
   // STAGE 16: Street Holdout
-  if (stageId === 16) {
+  else if (stageId === 16) {
      // HEAVY HITTERS PRIORITY
      // Enforcers (Heavy) - Spawn if affordable, higher cooldown
      if (canSpawn('e_enforcer')) {

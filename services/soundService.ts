@@ -57,6 +57,39 @@ class SoundManager {
     this.playTone(60, 'sawtooth', 0.3, 0.15);
   }
 
+  playMegaphoneNoise() {
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    
+    // Simulate loud feedback/siren squawk
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc1.type = 'sawtooth';
+    osc2.type = 'square';
+
+    // Slide pitch up quickly
+    osc1.frequency.setValueAtTime(300, t);
+    osc1.frequency.exponentialRampToValueAtTime(1200, t + 0.15);
+    
+    osc2.frequency.setValueAtTime(305, t); // Detuned
+    osc2.frequency.exponentialRampToValueAtTime(1220, t + 0.15);
+
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc1.start(t);
+    osc2.start(t);
+    osc1.stop(t + 0.4);
+    osc2.stop(t + 0.4);
+  }
+
   playUpgrade() {
     this.playTone(523.25, 'triangle', 0.2, 0.1);
     setTimeout(() => this.playTone(659.25, 'triangle', 0.2, 0.1), 100);

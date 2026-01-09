@@ -63,6 +63,9 @@ export const STAGE_CONFIG = [
   { id: 14, name: "Stunlocking", subtitle: "Builder, Baller, Battler & Cake Thrower", icon: "fas fa-bolt", color: "from-purple-900/80 to-pink-700/80" },
   { id: 15, name: "Alley Ambush", subtitle: "Nowhere to Run", icon: "fas fa-road", color: "from-zinc-800 to-stone-950" },
   { id: 16, name: "Street Holdout", subtitle: "Urban Blockade", icon: "fas fa-road", color: "from-gray-800 to-gray-950" },
+  { id: 17, name: "Tactical Breach", subtitle: "Modern Warfare", icon: "fas fa-fighter-jet", color: "from-zinc-900 to-slate-800" },
+  { id: 18, name: "Suppression Fire", subtitle: "Bullet Rain", icon: "fas fa-crosshairs", color: "from-stone-900 to-neutral-900" },
+  { id: 19, name: "Heavy Ordinance", subtitle: "Explosive Entry", icon: "fas fa-bomb", color: "from-slate-900 to-black" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -249,18 +252,28 @@ export const PLAYER_UNITS: UnitType[] = [
     description: 'Elite defensive personnel. Solid stats across the board.'
   },
   {
-    id: 'engineer',
-    name: 'Lead Dev',
-    icon: 'fas fa-laptop-code',
-    cost: 950,
-    hp: 483,
-    damage: 201,
-    speed: 3, 
-    range: 400,
-    attackCooldown: 2500,
-    spawnCooldown: 28750, 
-    unlockLevel: 5,
-    description: 'Long-range specialist. Delivers massive critical updates from afar.'
+    id: 'megaphone',
+    name: 'Megaphone Maniac',
+    icon: 'fas fa-bullhorn',
+    cost: 380,
+    hp: 350,
+    damage: 4,
+    speed: 3,
+    range: 300,
+    attackCooldown: 10000,
+    spawnCooldown: 12000,
+    unlockLevel: 100,
+    description: 'Spams loud sound effects through a megaphone. Stuns nearest non-boss enemy for 3s.',
+    altForm: {
+      name: 'Megaphone Earrape',
+      hp: 350,
+      damage: 2,
+      speed: 3,
+      range: 300,
+      attackCooldown: 20000,
+      cost: 450,
+      description: 'Global sound blast stuns all non-boss enemies for 3s. Takes 30% more damage while active.'
+    }
   },
   {
     id: 'ceo',
@@ -432,5 +445,47 @@ export const ENEMY_UNITS: UnitType[] = [
     spawnCooldown: 60000, 
     unlockLevel: 0,
     description: 'The Corporate Enforcer. Wields a shotgun and an attitude problem.'
+  },
+  {
+    id: 'e_tactical_trooper',
+    name: 'Tactical Trooper',
+    icon: 'fas fa-user-secret',
+    cost: 200,
+    hp: 600,
+    damage: 45,
+    speed: 3,
+    range: 200,
+    attackCooldown: 800,
+    spawnCooldown: 4000,
+    unlockLevel: 0,
+    description: 'Modern infantry with tactical gear and an assault rifle.'
+  },
+  {
+    id: 'e_sniper',
+    name: 'Elite Sniper',
+    icon: 'fas fa-crosshairs',
+    cost: 400,
+    hp: 300,
+    damage: 400,
+    speed: 1.5,
+    range: 550,
+    attackCooldown: 5000,
+    spawnCooldown: 10000,
+    unlockLevel: 0,
+    description: 'High damage, extreme range. Weak up close.'
+  },
+  {
+    id: 'e_heavy_gunner',
+    name: 'Heavy Gunner',
+    icon: 'fas fa-shield-alt',
+    cost: 800,
+    hp: 3000,
+    damage: 15,
+    speed: 1,
+    range: 300,
+    attackCooldown: 100,
+    spawnCooldown: 20000,
+    unlockLevel: 0,
+    description: 'Heavily armored unit with a rapid-fire minigun.'
   }
 ];
