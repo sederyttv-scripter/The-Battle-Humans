@@ -29,9 +29,9 @@ export const BASE_BANK_INCOME_PER_TICK = 0.75;
 export const BANK_INCOME_GAIN_PER_LEVEL = 0.50; 
 
 export const INITIAL_PLAYER_BASE_HP = 500;
-export const BASE_HEALTH_UPGRADE_BASE_COST = 250;
-export const BASE_HEALTH_UPGRADE_COST_MULTIPLIER = 1.45;
-export const BASE_HEALTH_GAIN_PER_LEVEL = 450;
+export const BASE_HEALTH_UPGRADE_BASE_COST = 500;
+export const BASE_HEALTH_UPGRADE_COST_MULTIPLIER = 1.0;
+export const BASE_HEALTH_GAIN_PER_LEVEL = 500;
 
 export const CANNON_COOLDOWN = 30000;
 export const CANNON_BASE_DAMAGE = 50;
@@ -43,7 +43,7 @@ export const REWARD_PER_STAGE = 225;
 export const FIRST_CLEAR_MULTIPLIER = 3.25;
 export const BOSS_CLEAR_MULTIPLIER = 5.5; 
 
-export const BOSS_STAGE_IDS = [10];
+export const BOSS_STAGE_IDS = [10, 20];
 export const GACHA_COST = 100;
 
 export const STAGE_CONFIG = [
@@ -66,6 +66,7 @@ export const STAGE_CONFIG = [
   { id: 17, name: "Tactical Breach", subtitle: "Modern Warfare", icon: "fas fa-fighter-jet", color: "from-zinc-900 to-slate-800" },
   { id: 18, name: "Suppression Fire", subtitle: "Bullet Rain", icon: "fas fa-crosshairs", color: "from-stone-900 to-neutral-900" },
   { id: 19, name: "Heavy Ordinance", subtitle: "Explosive Entry", icon: "fas fa-bomb", color: "from-slate-900 to-black" },
+  { id: 20, name: "The Bulldozer", subtitle: "Demolition Crew", icon: "fas fa-snowplow", color: "from-yellow-900 to-black", isBoss: true },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
@@ -487,5 +488,33 @@ export const ENEMY_UNITS: UnitType[] = [
     spawnCooldown: 20000,
     unlockLevel: 0,
     description: 'Heavily armored unit with a rapid-fire minigun.'
+  },
+  {
+    id: 'e_boss_bulldozer',
+    name: 'Bulldozer (BOSS)',
+    icon: 'fas fa-snowplow',
+    cost: 9999,
+    hp: 9500,
+    damage: 100,
+    speed: 0.6,
+    range: 100,
+    attackCooldown: 2000,
+    spawnCooldown: 60000,
+    unlockLevel: 0,
+    description: 'A massive industrial machine. Charges recklessly and builds spiky walls.'
+  },
+  {
+    id: 'e_spiky_wall',
+    name: 'Spiky Wall',
+    icon: 'fas fa-th',
+    cost: 10,
+    hp: 550,
+    damage: 50,
+    speed: 0,
+    range: 15,
+    attackCooldown: 100,
+    spawnCooldown: 1000,
+    unlockLevel: 0,
+    description: 'A dangerous barricade. Hurts anyone who touches it.'
   }
 ];

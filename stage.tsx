@@ -103,8 +103,28 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return (enemyCooldowns[unitId] || 0) === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 20: The Bulldozer
+  if (stageId === 20) {
+      if (!bossSpawned && timeElapsed > 3000) {
+         return { unitId: 'e_boss_bulldozer', cooldown: 0, setBossSpawned: true };
+      } else if (bossSpawned) {
+         if (canSpawn('e_heavy_gunner')) {
+             return { unitId: 'e_heavy_gunner', cooldown: 35000 };
+         } else if (canSpawn('e_sniper')) {
+             return { unitId: 'e_sniper', cooldown: 20000 };
+         } else if (canSpawn('e_fourth_puncher')) {
+             return { unitId: 'e_fourth_puncher', cooldown: 15000 };
+         } else if (canSpawn('e_enforcer')) {
+             return { unitId: 'e_enforcer', cooldown: 12000 };
+         } else if (canSpawn('e_tactical_trooper')) {
+             return { unitId: 'e_tactical_trooper', cooldown: 8000 };
+         } else if (canSpawn('e_cake_thrower')) {
+             return { unitId: 'e_cake_thrower', cooldown: 10000 };
+         }
+      }
+  }
   // STAGE 19: Heavy Ordinance
-  if (stageId === 19) {
+  else if (stageId === 19) {
      if (canSpawn('e_heavy_gunner')) {
          return { unitId: 'e_heavy_gunner', cooldown: 25000 };
      } else if (canSpawn('e_sniper')) {
@@ -131,46 +151,27 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
   }
   // STAGE 16: Street Holdout
   else if (stageId === 16) {
-     // HEAVY HITTERS PRIORITY
-     // Enforcers (Heavy) - Spawn if affordable, higher cooldown
      if (canSpawn('e_enforcer')) {
          return { unitId: 'e_enforcer', cooldown: 18000 };
-     } 
-     // Fourth Puncher (Heavy)
-     else if (canSpawn('e_fourth_puncher')) {
+     } else if (canSpawn('e_fourth_puncher')) {
          return { unitId: 'e_fourth_puncher', cooldown: 14000 };
-     } 
-     
-     // BACKLINE SUPPORT
-     // Baller - Sustained pressure
-     else if (canSpawn('e_baller')) {
+     } else if (canSpawn('e_baller')) {
          return { unitId: 'e_baller', cooldown: 12000 };
-     } 
-     // Pistoler - Constant ranged fire
-     else if (canSpawn('e_pistoler')) {
+     } else if (canSpawn('e_pistoler')) {
          return { unitId: 'e_pistoler', cooldown: 9000 };
-     }
-
-     // FRONTLINE FLOOD (Lower priority but higher frequency due to lower cost/cooldown)
-     // Double Puncher - Aggressive soaking
-     else if (canSpawn('e_double_puncher')) {
+     } else if (canSpawn('e_double_puncher')) {
          return { unitId: 'e_double_puncher', cooldown: 5000 };
-     } 
-     // Battler - Cannon fodder
-     else if (canSpawn('e_battler')) {
+     } else if (canSpawn('e_battler')) {
          return { unitId: 'e_battler', cooldown: 2000 };
      }
   }
   // STAGE 15: Alley Ambush
   else if (stageId === 15) {
-     // Initial Rush of Battlers to soak damage
      if (timeElapsed < 20000) {
         if (canSpawn('e_battler')) {
              return { unitId: 'e_battler', cooldown: 2000 };
         }
      }
-     
-     // Mixed Waves: Enforcer push with Pistoler support
      if (canSpawn('e_enforcer')) {
          return { unitId: 'e_enforcer', cooldown: 10000 };
      } else if (canSpawn('e_pistoler')) {
@@ -220,7 +221,6 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
   // STAGE 10: No Mercy (Boss Stage)
   else if (stageId === 10) {
       if (!bossSpawned && timeElapsed > 2000) {
-         // Summon Boss
          return { unitId: 'e_boss_shotgunner', cooldown: 0, setBossSpawned: true };
       } else if (bossSpawned) {
          if (canSpawn('e_baller')) {
@@ -255,7 +255,6 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
              const u = ENEMY_UNITS.find(e => e.id === pick)!;
              return { unitId: pick, cooldown: u.spawnCooldown };
          } else if (enemyMoney > 400) {
-             // Reinforce if rich
              const meatshields = ['e_battler', 'e_double_puncher', 'e_rage_battler'];
              const availableMS = meatshields.filter(id => canSpawn(id));
              if (availableMS.length > 0) {
@@ -307,15 +306,12 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
   } 
   
   // GENERAL FALLBACK / EARLIER STAGES
-  
-  // General Logic for Stages 3-5 (Mixed support)
   if (stageId >= 3 && stageId <= 5) {
       const chance = Math.random();
       if (chance < 0.15 && canSpawn('e_builder')) {
           return { unitId: 'e_builder', cooldown: 18000 };
       }
   }
-  // General Logic for Stages 4-5 (Pistoler support)
   if (stageId >= 4 && stageId <= 5) {
       const chance = Math.random();
       if (chance < 0.1 && canSpawn('e_pistoler')) {
@@ -323,7 +319,6 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
       }
   }
 
-  // Stage 2 Specifics
   if (stageId === 2) {
     const chance = Math.random();
     if (chance < 0.15 && canSpawn('e_double_puncher')) {
@@ -332,18 +327,14 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
       return { unitId: 'e_battler', cooldown: 5000 };
     }
   } 
-  // Stage 3+ General Spawns
   else if (stageId >= 3) {
     const chance = Math.random();
-    // Don't re-spawn if handled above, but these are checks for "else if" flow
-    // Since we return early above for specific combos, these act as fillers
     if (chance < 0.15 && canSpawn('e_double_puncher')) {
       return { unitId: 'e_double_puncher', cooldown: 6000 };
     } else if (chance < 0.4 && canSpawn('e_battler')) {
       return { unitId: 'e_battler', cooldown: 3000 };
     }
   } 
-  // Stage 1
   else if (stageId === 1) {
     const chance = Math.random();
     if (chance < 0.25 && canSpawn('e_battler')) {

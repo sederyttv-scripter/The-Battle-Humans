@@ -31,6 +31,10 @@ import {
   STARTING_BUDGET_GAIN_PER_LEVEL, 
   STARTING_BUDGET_UPGRADE_BASE_COST, 
   STARTING_BUDGET_UPGRADE_COST_MULTIPLIER,
+  INITIAL_PLAYER_BASE_HP,
+  BASE_HEALTH_UPGRADE_BASE_COST,
+  BASE_HEALTH_UPGRADE_COST_MULTIPLIER,
+  BASE_HEALTH_GAIN_PER_LEVEL,
   STAGE_CONFIG,
   BOSS_STAGE_IDS,
   GACHA_COST
@@ -68,7 +72,7 @@ const clearAllGameData = () => {
   const keys = [
     'bh_level', 'bh_xp', 'bh_coins', 'bh_diamonds', 'bh_unit_levels', 
     'bh_preferred_forms', 'bh_loadout', 'bh_stages', 'bh_boss_claims',
-    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_version',
+    'bh_cannon_level', 'bh_bank_level', 'bh_starting_budget_level', 'bh_base_health_level', 'bh_version',
     'bh_pity'
   ];
   keys.forEach(deleteCookie);
@@ -95,8 +99,9 @@ const BattlerVisual: React.FC<{
   isAlmanac?: boolean,
   hasThrownShotgun?: boolean,
   hasThrownCake?: boolean,
-  isStunned?: boolean
-}> = ({ typeId, isHeavy, isAttacking, hasHat, size = 'md', lastAbilityTime, isAltForm, isAlmanac, hasThrownShotgun, hasThrownCake, isStunned }) => {
+  isStunned?: boolean,
+  chargeWindupStart?: number
+}> = ({ typeId, isHeavy, isAttacking, hasHat, size = 'md', lastAbilityTime, isAltForm, isAlmanac, hasThrownShotgun, hasThrownCake, isStunned, chargeWindupStart }) => {
   const scale = size === 'sm' ? 'scale-75' : size === 'lg' ? 'scale-125' : 'scale-100';
   const isAlly = typeId && !typeId.startsWith('e_');
   const now = Date.now();
@@ -105,6 +110,7 @@ const BattlerVisual: React.FC<{
   const isSlamming = typeId === 'e_boss_shotgunner' && lastAbilityTime && (now - lastAbilityTime < 1000);
   const isThrowingCake = typeId === 'e_cake_thrower' && lastAbilityTime && (now - lastAbilityTime < 600);
   const isThrowingCola = typeId === 'cola_thrower' && isAttacking;
+  const isChargingWindup = !!(chargeWindupStart && (now - chargeWindupStart < 1500));
   
   // --- HOOKS MUST BE CALLED UNCONDITIONALLY AT THE TOP ---
 
@@ -129,6 +135,7 @@ const BattlerVisual: React.FC<{
       case 'e_tactical_trooper': return 'animate-idle-breathing';
       case 'e_sniper': return 'animate-idle-gentle';
       case 'e_heavy_gunner': return 'animate-idle-aggressive';
+      case 'e_boss_bulldozer': return 'animate-idle-boss';
       default: return 'animate-idle-gentle';
     }
   }, [typeId, isAlmanac, isStunned]);
@@ -489,6 +496,88 @@ const BattlerVisual: React.FC<{
       );
   }
 
+  // Special Rendering for Bulldozer Boss
+  if (typeId === 'e_boss_bulldozer') {
+      return (
+        <div className={`relative flex flex-col items-center ${scale} ${isChargingWindup ? 'animate-vibrate' : ''}`}>
+           {/* Dust/Smoke Effect (Behind during charge) */}
+           {isChargingWindup && (
+               <div className="absolute bottom-0 -right-16 w-24 h-24 bg-stone-600/40 rounded-full blur-2xl animate-pulse -z-20"></div>
+           )}
+
+           {/* Cables/Chains (Shoulder to Gun) - Rendered behind */}
+           <div className="absolute top-8 -left-6 w-8 h-12 border-l-2 border-b-2 border-yellow-900/80 rounded-bl-full -z-10"></div>
+
+           {/* Head */}
+           <div className="relative z-20 -mb-2">
+               <div className={`w-10 h-11 ${isChargingWindup ? 'bg-yellow-700' : 'bg-zinc-800'} rounded-lg border-2 border-black relative overflow-hidden shadow-lg transition-colors duration-200`}>
+                   {/* Helmet */}
+                   <div className="absolute top-0 left-0 w-full h-4 bg-zinc-600 border-b-2 border-black/50">
+                       <div className="absolute top-1 left-2 w-3 h-0.5 bg-black/30 -rotate-12"></div> {/* Scratch */}
+                   </div>
+                   {/* Eyes */}
+                   <div className="flex justify-center gap-2 mt-5">
+                       <div className={`w-2 h-1 ${isChargingWindup ? 'bg-yellow-300 shadow-[0_0_8px_yellow]' : 'bg-red-600 shadow-[0_0_5px_red]'} rounded-sm`}></div>
+                       <div className={`w-2 h-1 ${isChargingWindup ? 'bg-yellow-300 shadow-[0_0_8px_yellow]' : 'bg-red-600 shadow-[0_0_5px_red]'} rounded-sm`}></div>
+                   </div>
+                   {/* Face / Jaw */}
+                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-2 border-t-2 border-zinc-950 opacity-60"></div>
+               </div>
+           </div>
+
+           {/* Upper Body */}
+           <div className="relative z-10 flex justify-center">
+               {/* Left Shoulder Pad (Visual Right) */}
+               <div className="absolute -top-2 -right-8 w-9 h-8 bg-zinc-700 border-2 border-zinc-900 rounded-lg -skew-y-12 shadow-md flex items-center justify-center">
+                   <div className="w-1 h-4 bg-black/20 rotate-45"></div> {/* Dent */}
+               </div>
+               {/* Right Shoulder Pad (Visual Left - Gun Arm side) */}
+               <div className="absolute -top-2 -left-8 w-9 h-8 bg-zinc-700 border-2 border-zinc-900 rounded-lg skew-y-12 shadow-md"></div>
+
+               {/* Torso */}
+               <div className={`w-20 h-24 ${isChargingWindup ? 'bg-yellow-800 border-yellow-500 shadow-[0_0_20px_rgba(234,179,8,0.6)]' : 'bg-zinc-900 border-zinc-950'} border-x-4 rounded-sm relative flex flex-col items-center transition-colors duration-200`}>
+                   
+                   {/* Chest Plate */}
+                   <div className="w-16 h-12 bg-zinc-600 border-2 border-zinc-500 rounded-sm mt-2 shadow-inner relative overflow-hidden">
+                       <div className="absolute top-2 right-2 w-6 h-1 bg-black/40 rotate-12"></div> {/* Scratch */}
+                       <div className="absolute bottom-3 left-2 w-4 h-1 bg-black/40 -rotate-6"></div>
+                   </div>
+
+                   {/* Glowing Tubes */}
+                   <div className="w-14 flex justify-between px-2 mt-2">
+                       <div className={`w-1.5 h-6 rounded-full ${isChargingWindup ? 'bg-yellow-300' : 'bg-yellow-600/50'} animate-pulse`}></div>
+                       <div className={`w-1.5 h-6 rounded-full ${isChargingWindup ? 'bg-yellow-300' : 'bg-yellow-600/50'} animate-pulse delay-75`}></div>
+                       <div className={`w-1.5 h-6 rounded-full ${isChargingWindup ? 'bg-yellow-300' : 'bg-yellow-600/50'} animate-pulse delay-150`}></div>
+                   </div>
+               </div>
+
+               {/* Arm Gun (Right Arm - Visual Left) */}
+               <div className={`absolute top-4 -left-10 w-8 h-20 bg-zinc-800 border-2 border-black rounded-md origin-top transition-transform ${isAttacking && !isChargingWindup ? '-rotate-45' : 'rotate-6'}`}>
+                   {/* Gun mechanism */}
+                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-8 bg-black border border-zinc-600"></div> 
+                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-2 bg-red-900"></div> {/* Muzzle glow hint */}
+               </div>
+
+               {/* Left Arm (Visual Right) */}
+               <div className="absolute top-4 -right-9 w-7 h-16 bg-zinc-800 border-2 border-black rounded-md origin-top -rotate-6">
+                   <div className="absolute top-6 left-0 w-full h-1 bg-black/30"></div>
+                   <div className="absolute bottom-0 w-full h-6 bg-zinc-700 rounded-b-md border-t border-black"></div> {/* Fist/Glove */}
+               </div>
+           </div>
+
+           {/* Legs */}
+           <div className="flex gap-2 -mt-2 z-0">
+               <div className="w-8 h-14 bg-zinc-800 border-2 border-black rounded-b-lg flex flex-col items-center">
+                   <div className="w-full h-5 bg-zinc-600 border-b border-black"></div> {/* Knee */}
+               </div>
+               <div className="w-8 h-14 bg-zinc-800 border-2 border-black rounded-b-lg flex flex-col items-center">
+                   <div className="w-full h-5 bg-zinc-600 border-b border-black"></div> {/* Knee */}
+               </div>
+           </div>
+        </div>
+      );
+  }
+
   return (
     <div className={`relative transition-transform duration-150 ${scale} ${isHeavy || typeId === 'e_boss_shotgunner' || typeId === 'e_fourth_puncher' ? 'scale-125' : ''} ${isSlamming ? 'animate-boss-slam' : isAttacking ? (isHeavy ? 'animate-double-punch' : 'animate-battler-lunge') : idleAnimationClass}`}>
       {/* Stun Effect */}
@@ -618,6 +707,7 @@ const UnitHpBar: React.FC<{ unit: ActiveUnit, unitLevels: Record<string, number>
     }
     
     if (unit.typeId === 'e_boss_shotgunner') maxHp = 6563; 
+    if (unit.typeId === 'e_boss_bulldozer') maxHp = 9500;
 
     const pct = Math.max(0, Math.min(100, (unit.currentHp / maxHp) * 100));
     
@@ -632,14 +722,15 @@ const Battlefield: React.FC<{
   units: ActiveUnit[];
   playerBaseHp: number;
   enemyBaseHp: number;
-  maxBaseHp: number;
+  playerMaxHp: number;
+  enemyMaxHp: number;
   unitLevels: Record<string, number>;
   cannonEffect: boolean;
   currentStage: number;
   isEnemyImmune: boolean;
-}> = ({ units, playerBaseHp, enemyBaseHp, maxBaseHp, unitLevels, cannonEffect, currentStage, isEnemyImmune }) => {
-  const playerHpPercent = Math.max(0, (playerBaseHp / maxBaseHp) * 100);
-  const enemyHpPercent = Math.max(0, (enemyBaseHp / maxBaseHp) * 100);
+}> = ({ units, playerBaseHp, enemyBaseHp, playerMaxHp, enemyMaxHp, unitLevels, cannonEffect, currentStage, isEnemyImmune }) => {
+  const playerHpPercent = Math.max(0, (playerBaseHp / playerMaxHp) * 100);
+  const enemyHpPercent = Math.max(0, (enemyBaseHp / enemyMaxHp) * 100);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -709,6 +800,7 @@ const Battlefield: React.FC<{
                                         hasThrownShotgun={unit.hasThrownShotgun}
                                         hasThrownCake={unit.hasThrownCake}
                                         isStunned={!!(unit.stunnedUntil && unit.stunnedUntil > Date.now())}
+                                        chargeWindupStart={unit.chargeWindupStart}
                                     />
                                 </div>
                             </div>
@@ -783,6 +875,7 @@ export default function App() {
     const savedCannonLevel = getCookie('bh_cannon_level');
     const savedBankLevel = getCookie('bh_bank_level');
     const savedStartingBudgetLevel = getCookie('bh_starting_budget_level');
+    const savedBaseHealthLevel = getCookie('bh_base_health_level');
     const savedDiamonds = getCookie('bh_diamonds');
     const savedBossClaims = getCookie('bh_boss_claims');
     const savedPity = getCookie('bh_pity');
@@ -820,7 +913,7 @@ export default function App() {
       cannonLevel: savedCannonLevel ? parseInt(savedCannonLevel) : 1,
       bankLevel: savedBankLevel ? parseInt(savedBankLevel) : 1,
       startingBudgetLevel: savedStartingBudgetLevel ? parseInt(savedStartingBudgetLevel) : 1,
-      baseHealthLevel: 1,
+      baseHealthLevel: savedBaseHealthLevel ? parseInt(savedBaseHealthLevel) : 1,
       sandboxMode: false,
       sandboxPaused: false,
       pityCounter: savedPity ? parseInt(savedPity) : 0
@@ -841,10 +934,11 @@ export default function App() {
     setCookie('bh_cannon_level', gameState.cannonLevel.toString());
     setCookie('bh_bank_level', gameState.bankLevel.toString());
     setCookie('bh_starting_budget_level', gameState.startingBudgetLevel.toString());
+    setCookie('bh_base_health_level', gameState.baseHealthLevel.toString());
     setCookie('bh_pity', gameState.pityCounter.toString());
-  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.diamonds, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.claimedBossStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel, gameState.pityCounter]);
+  }, [gameState.playerLevel, gameState.playerXP, gameState.coins, gameState.diamonds, gameState.unitLevels, gameState.preferredForms, gameState.loadout, gameState.unlockedStages, gameState.claimedBossStages, gameState.cannonLevel, gameState.bankLevel, gameState.startingBudgetLevel, gameState.baseHealthLevel, gameState.pityCounter]);
 
-  // --- Theme Music Controller ---
+  // ... (Theme Music Controller remains same)
   useEffect(() => {
     if (gameState.screen === 'battle' && !gameState.isGameOver) {
       if (gameState.currentStage === 10) {
@@ -864,8 +958,8 @@ export default function App() {
     };
   }, [gameState.screen, gameState.isGameOver, gameState.currentStage]);
 
+  // ... (isUnitUnlocked, getUpgradeCost, getBankUpgradeCost remain same)
   const isUnitUnlocked = (unit: UnitType) => {
-      // Special logic for Gacha units
       if (unit.unlockLevel >= 100) {
           return (gameState.unitLevels[unit.id] || 0) > 0;
       }
@@ -874,8 +968,6 @@ export default function App() {
 
   const getUpgradeCost = useCallback((unit: UnitType, level: number) => {
     let baseUpgradeCost = UNIT_UPGRADE_BASE_COST;
-    
-    // Baby Intern specific balancing - extremely cheap upgrades
     if (unit.id === 'baby') {
         baseUpgradeCost = 50; 
     } else if (unit.cost <= 100) {
@@ -888,6 +980,7 @@ export default function App() {
 
   const getBankUpgradeCost = (level: number) => Math.floor(BANK_UPGRADE_BASE_COST * Math.pow(BANK_UPGRADE_COST_MULTIPLIER, level - 1));
 
+  // ... (useRefs for nextInstanceId etc. remain same)
   const nextInstanceId = useRef(0);
   const lastUpdateRef = useRef(Date.now());
   const enemyMoneyRef = useRef(INITIAL_MONEY);
@@ -898,6 +991,7 @@ export default function App() {
   });
   const battleStartTimeRef = useRef(0);
 
+  // ... (deployUnit, deploySandboxUnit, toggleForm, upgradeUnit, rollGacha remain same)
   const deployUnit = useCallback((side: Side, typeId: string, spawnX?: number) => {
     const type = (side === 'player' ? PLAYER_UNITS : ENEMY_UNITS).find(t => t.id === typeId);
     if (!type) return;
@@ -996,7 +1090,6 @@ export default function App() {
     }
   };
 
-  // --- GACHA LOGIC ---
   const rollGacha = () => {
       if (gameState.diamonds < GACHA_COST || isGachaRolling) return;
       
@@ -1010,27 +1103,24 @@ export default function App() {
           let unitId = '';
           let rarity = 'Rare';
           
-          // Pity Check (30th pull guarantees Uber)
           const isPityTrigger = gameState.pityCounter >= 29;
 
-          if (isPityTrigger || rand < 0.05) { // 5% Uber Rare or Pity
+          if (isPityTrigger || rand < 0.05) { 
              rarity = 'Uber Rare';
-             unitId = 'grappler'; // Replaces CEO as Uber Rare
-          } else if (rand < 0.30) { // 25% Super Rare
+             unitId = 'grappler'; 
+          } else if (rand < 0.30) { 
              rarity = 'Super Rare';
-             const pool = ['megaphone']; // Replaced 'engineer' (Lead Dev)
+             const pool = ['megaphone']; 
              unitId = pool[Math.floor(Math.random() * pool.length)];
-          } else { // 70% Rare
+          } else { 
              rarity = 'Rare';
              const pool = ['cola_thrower', 'retro_battler']; 
              unitId = pool[Math.floor(Math.random() * pool.length)];
           }
 
-          // Check if already owned
           const currentLevel = gameState.unitLevels[unitId] || 0;
           const isUnlock = currentLevel === 0;
           
-          // Reset pity if Uber Rare, else increment
           const newPity = rarity === 'Uber Rare' ? 0 : gameState.pityCounter + 1;
 
           setGameState(p => ({
@@ -1044,23 +1134,30 @@ export default function App() {
 
           setGachaResult({ unitId, isUnlock, rarity });
           setIsGachaRolling(false);
-          sounds.playWin(); // Success sound
-      }, 2000); // Animation delay
+          sounds.playWin(); 
+      }, 2000); 
   };
 
   const startBattle = useCallback((stage: number, isSandbox: boolean = false) => {
-    const maxHp = 500 + (stage - 1) * 1000;
+    // Enemy Base HP Logic
+    let enemyMaxHp = 500 + (stage - 1) * 1000; // Default fallback (e.g. stage 10 or 20+)
+    if (stage >= 1 && stage <= 9) enemyMaxHp = 1000;
+    else if (stage >= 11 && stage <= 19) enemyMaxHp = 3500;
+
     sounds.playClick();
     setGameState(prev => {
       const initialMoney = INITIAL_MONEY + (prev.startingBudgetLevel - 1) * STARTING_BUDGET_GAIN_PER_LEVEL;
+      // Player Base HP Logic
+      const playerMaxHp = INITIAL_PLAYER_BASE_HP + (prev.baseHealthLevel - 1) * BASE_HEALTH_GAIN_PER_LEVEL;
+
       return {
         ...prev,
         screen: 'battle',
         currentStage: stage,
         money: initialMoney,
-        walletLevel: 0, // Reset wallet level on new battle
-        playerBaseHp: maxHp,
-        enemyBaseHp: maxHp,
+        walletLevel: 0, 
+        playerBaseHp: playerMaxHp,
+        enemyBaseHp: enemyMaxHp,
         units: [],
         isGameOver: false,
         winner: null,
@@ -1078,7 +1175,7 @@ export default function App() {
         'e_rage_battler': 0, 'e_baller': 0, 'e_fourth_puncher': 0, 'e_cake_thrower': 0, 'e_enforcer': 0,
         'e_tactical_trooper': 0, 'e_sniper': 0, 'e_heavy_gunner': 0
     };
-    setShowSandboxPanel(isSandbox); // Auto open panel in sandbox
+    setShowSandboxPanel(isSandbox); 
     setBossSpawned(false);
   }, []);
 
@@ -1138,6 +1235,7 @@ export default function App() {
     }
   }, [cannonReadyTime, gameState.cannonLevel]);
 
+  // ... (useEffect game loop remains largely same, just checking variable references)
   useEffect(() => {
     if (gameState.screen !== 'battle' || gameState.isGameOver) return;
     const interval = setInterval(() => {
@@ -1149,13 +1247,11 @@ export default function App() {
       setGameState(prev => {
         if (prev.isGameOver) return prev;
         
-        // Income Logic: (Base Bank + Gains) * Wallet Multiplier
         const baseIncomePerTick = BASE_BANK_INCOME_PER_TICK + (prev.bankLevel - 1) * BANK_INCOME_GAIN_PER_LEVEL;
         const totalIncomeRatePerTick = baseIncomePerTick * MONEY_MULTIPLIER[prev.walletLevel];
         
         let newMoney = Math.min(prev.money + (totalIncomeRatePerTick * (delta / MONEY_TICK_INTERVAL)), 999999);
         
-        // Enemy income scaling with stage
         const enemyIncomeBase = 1.0 + (prev.currentStage * 1.0);
         enemyMoneyRef.current += (enemyIncomeBase * (delta / MONEY_TICK_INTERVAL));
         
@@ -1163,7 +1259,6 @@ export default function App() {
         
         let unitToSpawn = null;
         
-        // --- SPAWN LOGIC START (REFACTORED to stage.tsx) ---
         if (timeElapsed > 5000 && !prev.sandboxPaused) {
           const spawnCommand = evaluateStageSpawns({
             stageId: prev.currentStage,
@@ -1181,13 +1276,10 @@ export default function App() {
             }
             
             unitToSpawn = spawnCommand.unitId;
-            // Set cooldown
             enemyCooldownsRef.current[spawnCommand.unitId] = spawnCommand.cooldown;
           }
 
           if (unitToSpawn) {
-            // BOSS SPAWN FIX: Don't deduct cost for Boss in Stage 10 to allow it to spawn support
-            // (Preserving original logic behavior)
             if (unitToSpawn !== 'e_boss_shotgunner') {
                 const u = ENEMY_UNITS.find(e => e.id === unitToSpawn);
                 if (u) enemyMoneyRef.current -= u.cost;
@@ -1195,15 +1287,13 @@ export default function App() {
             setTimeout(() => deployUnit('enemy', unitToSpawn!), 0);
           }
         }
-        // --- SPAWN LOGIC END ---
 
         const newUnits = [...prev.units.map(u => ({ ...u }))];
         let pDmg = 0; let eDmg = 0;
         const pendingUnits: ActiveUnit[] = [];
         for (let u of newUnits) {
-          // --- STUN LOGIC ---
           if (u.stunnedUntil && u.stunnedUntil > now) {
-            continue; // Skip movement and attack if stunned
+            continue; 
           }
 
           const type = (u.side === 'player' ? PLAYER_UNITS : ENEMY_UNITS).find(t => t.id === u.typeId)!;
@@ -1218,74 +1308,58 @@ export default function App() {
             }
           }
           
-          // --- BOSS LOGIC START ---
           if (u.typeId === 'e_boss_shotgunner') {
-             // Phase 3 Transition Logic: Ground Slam
              if (u.currentHp <= 3000 && !u.hasSlammed) {
                 u.hasSlammed = true;
-                u.lastAbilityTime = now; // Trigger Slam animation
-                
-                // Heal 25% of Max HP (6563) -> ~1640
+                u.lastAbilityTime = now; 
                 const maxBossHp = 6563; 
                 u.currentHp = Math.min(maxBossHp, u.currentHp + (maxBossHp * 0.25));
-                
-                // Instant Kill Player Units
                 newUnits.forEach(target => {
                     if (target.side === 'player') {
                         target.currentHp = -99999;
                     }
                 });
-                
-                // Summon 3 Double Punchers
                 for(let i=0; i<3; i++) {
                      pendingUnits.push({
                         instanceId: nextInstanceId.current++,
                         typeId: 'e_double_puncher',
                         side: 'enemy',
                         x: u.x + (Math.random() * 60 - 30),
-                        currentHp: 225, // Base HP of Double Puncher
+                        currentHp: 225, 
                         lastAttackTime: 0,
                         lastAbilityTime: 0
                      });
                 }
-                
-                sounds.playBaseHit(); // Heavy impact sound
+                sounds.playBaseHit();
              }
 
-             // Transition Logic: Throw Shotgun
              if (u.currentHp < 5000 && !u.hasThrownShotgun) {
                 u.hasThrownShotgun = true;
-                // AK-47 Mode speed
-                effectiveAttackCooldown = 100; // Buffed to 0.1s
-                u.lastAttackTime = now; // Reset timer for new phase
+                effectiveAttackCooldown = 100; 
+                u.lastAttackTime = now; 
              } 
-             // Phase 2: AK-47
              else if (u.hasThrownShotgun) {
-                effectiveAttackCooldown = 100; // Buffed to 0.1s
+                effectiveAttackCooldown = 100;
              }
-             // Phase 1: Shotgun (default)
              else {
                 effectiveAttackCooldown = 2500;
              }
           }
-          // --- BOSS LOGIC END ---
 
           let enemyDamageScaling = 1.0;
           if (u.side === 'enemy') {
               if (u.typeId === 'e_battler' && prev.currentStage === 1) enemyDamageScaling = 0.75;
               if (prev.currentStage === 9) enemyDamageScaling = 0.98;
-              if (prev.currentStage >= 11) enemyDamageScaling = 1.05; // 5% Boost
+              if (prev.currentStage >= 11) enemyDamageScaling = 1.05; 
           }
           
           let actualDmg = stats.damage * (u.side === 'player' ? (1 + (level - 1) * STAT_GAIN_PER_LEVEL) : enemyDamageScaling);
           if (u.typeId === 'e_wall') continue;
           
           const distToBase = u.side === 'player' ? FIELD_WIDTH - u.x : u.x;
-          
-          // Effective Range Logic for Cake Thrower and Cola Thrower (Alt)
           let effectiveRange = stats.range;
           if (u.typeId === 'e_cake_thrower' && u.hasThrownCake) {
-             effectiveRange = 40; // Reverts to melee range after throwing
+             effectiveRange = 40; 
           }
 
           const possibleTargets = newUnits.filter(other => other.side !== u.side && Math.abs(u.x - other.x) <= effectiveRange);
@@ -1305,73 +1379,55 @@ export default function App() {
             if (now - u.lastAttackTime > effectiveAttackCooldown) {
               u.lastAttackTime = now; sounds.playAttack();
 
-              // --- SPECIAL BOSS ATTACK LOGIC ---
               if (u.typeId === 'e_boss_shotgunner') {
-                  // Phase Transition Throw Attack
                   if (u.currentHp < 5000 && !u.hasThrownShotgun) {
-                      u.hasThrownShotgun = true; // Mark done
-                      
-                      // Throw passes through 5 allies
+                      u.hasThrownShotgun = true; 
                       const targetsToHit = possibleTargets
                           .sort((a, b) => Math.abs(u.x - a.x) - Math.abs(u.x - b.x))
                           .slice(0, 5);
-                      
                       targetsToHit.forEach(t => t.currentHp = -99999);
                   } 
-                  // Phase 1: Shotgun (Multi-target)
                   else if (!u.hasThrownShotgun) {
-                      // Hit up to 6 targets
                       const targets = possibleTargets.slice(0, 6);
                       targets.forEach(t => t.currentHp -= actualDmg);
                   }
-                  // Phase 2: AK-47 (Single target, fast, lower damage)
                   else {
-                      target.currentHp -= 37; // Buffed AK damage (was 31)
+                      target.currentHp -= 37; 
                   }
               } 
-              // --- CAKE THROWER LOGIC ---
               else if (u.typeId === 'e_cake_thrower' && !u.hasThrownCake) {
                   u.hasThrownCake = true;
-                  u.lastAbilityTime = now; // MARK THROW TIME FOR ANIMATION
+                  u.lastAbilityTime = now;
                   target.currentHp -= actualDmg;
-                  target.stunnedUntil = now + 3000; // 3s Stun
-                  sounds.playBaseHit(); // Heavy impact
+                  target.stunnedUntil = now + 3000;
+                  sounds.playBaseHit(); 
               }
-              // --- MEGAPHONE MANIAC LOGIC ---
               else if (u.typeId === 'megaphone') {
                   sounds.playMegaphoneNoise();
                   if (u.isAltForm) {
-                      // Earrape: Global Hit
                       const allEnemies = newUnits.filter(t => t.side !== u.side);
                       allEnemies.forEach(t => {
                           const isBoss = t.typeId === 'e_boss_shotgunner';
-                          // Alt form deals small damage
                           let dmg = actualDmg;
-                          
                           t.currentHp -= dmg;
                           if (!isBoss) {
                               t.stunnedUntil = now + 3000;
                           }
-                          // Tiny knockback
                           t.x += (u.side === 'player' ? 1 : -1) * 5;
                           t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
                       });
                   } else {
-                      // Base: Single Target
                       target.currentHp -= actualDmg;
                       const isBoss = target.typeId === 'e_boss_shotgunner';
                       if (!isBoss) {
                           target.stunnedUntil = now + 3000;
                       }
-                      // Tiny knockback
                       target.x += (u.side === 'player' ? 1 : -1) * 5;
                       target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
                   }
               }
-              // --- COLA THROWER LOGIC ---
               else if (u.typeId === 'cola_thrower') {
                  if (u.isAltForm) {
-                     // Cola Spray: Apply stack and calculate damage
                      const stackCount = target.colaStacks || 0;
                      if (stackCount < 14) {
                         target.colaStacks = stackCount + 1;
@@ -1379,22 +1435,19 @@ export default function App() {
                      const finalDmg = actualDmg * (1 + (0.15 * (target.colaStacks || 0)));
                      target.currentHp -= finalDmg;
                      
-                     // Alt Form Knockback Buff: Small push per hit
                      if (target.typeId !== 'e_boss_shotgunner') {
                          const sprayKnockback = 15;
                          target.x += (u.side === 'player' ? 1 : -1) * sprayKnockback;
                          target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
                      }
                  } else {
-                     // Base Form: AOE Knockback
-                     // Hit main target and nearby
                      const aoeTargets = newUnits.filter(other => 
                         other.side !== u.side && Math.abs(other.x - target!.x) <= 50
                      );
                      aoeTargets.forEach(t => {
                         t.currentHp -= actualDmg;
                         if (t.typeId !== 'e_boss_shotgunner') {
-                            const knockback = 60; // Buffed from 20 to 60 (Massive Knockback)
+                            const knockback = 60; 
                             t.x += (u.side === 'player' ? 1 : -1) * knockback;
                             t.x = Math.max(0, Math.min(FIELD_WIDTH, t.x));
                         }
@@ -1402,20 +1455,15 @@ export default function App() {
                  }
               }
               else {
-                  // Standard Unit Attack
                   let finalDmg = actualDmg;
-                  // Megaphone Alt Form Self-Debuff Logic (When GETTING hit)
-                  // But we are in the ATTACKER loop here. The attacker deals damage.
-                  // We need to check if the TARGET is a megaphone alt form.
                   if (target.typeId === 'megaphone' && target.isAltForm) {
                       finalDmg *= 1.3;
                   }
                   target.currentHp -= finalDmg;
               }
 
-              // --- KNOCKBACK LOGIC ---
               if (u.typeId === 'e_baller') {
-                 const knockbackDist = 45; // Buffed from 30
+                 const knockbackDist = 45; 
                  target.x += (target.side === 'player' ? -1 : 1) * knockbackDist;
                  target.x = Math.max(0, Math.min(FIELD_WIDTH, target.x));
               }
@@ -1435,9 +1483,8 @@ export default function App() {
                    sounds.playBaseHit();
                 }
               } else {
-                // Boss Base Damage Logic
                 if (u.typeId === 'e_boss_shotgunner' && u.hasThrownShotgun) {
-                    pDmg += 37; // AK Base Damage
+                    pDmg += 37; 
                 } else if (u.typeId === 'e_boss_shotgunner' && !u.hasThrownShotgun) {
                     pDmg += actualDmg * 2; 
                 } else {
@@ -1466,7 +1513,6 @@ export default function App() {
              xp += XP_PER_WIN; if (xp >= XP_TO_LEVEL(plvl)) { xp -= XP_TO_LEVEL(plvl); plvl++; }
              const isFirst = !prev.unlockedStages.includes(prev.currentStage + 1);
              
-             // Balanced Reward Logic
              const stageInfo = STAGE_CONFIG.find(s => s.id === prev.currentStage);
              const multiplier = isFirst ? (stageInfo?.isBoss ? BOSS_CLEAR_MULTIPLIER : FIRST_CLEAR_MULTIPLIER) : 1;
              const reward = Math.floor(prev.currentStage * REWARD_PER_STAGE * multiplier);
@@ -1474,7 +1520,6 @@ export default function App() {
              newCoins += reward; 
              if (!stages.includes(prev.currentStage + 1)) stages.push(prev.currentStage + 1);
 
-             // Boss Diamond Reward Logic
              if (BOSS_STAGE_IDS.includes(prev.currentStage) && !claimedBosses.includes(prev.currentStage)) {
                  earnedDiamonds = 100;
                  claimedBosses.push(prev.currentStage);
@@ -1507,7 +1552,6 @@ export default function App() {
   }, [gameState.screen, gameState.isGameOver, deployUnit, bossSpawned]);
 
   const renderUnitDetail = (unitId: string | null) => {
-    // Shared Upgrade Panel UI Logic
     const renderUpgradeCard = (icon: string, title: string, level: number, desc: string, value: string, cost: number, onUpgrade: () => void) => (
       <div className="flex flex-col h-full bg-slate-900/50 backdrop-blur-md">
         <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 text-center space-y-4 overflow-y-auto custom-scrollbar min-h-0">
@@ -1532,6 +1576,15 @@ export default function App() {
         </div>
       </div>
     );
+
+    if (unitId === 'base_health_upgrade') {
+      const level = gameState.baseHealthLevel;
+      const cost = Math.floor(BASE_HEALTH_UPGRADE_BASE_COST * Math.pow(BASE_HEALTH_UPGRADE_COST_MULTIPLIER, level - 1));
+      const currentHealth = INITIAL_PLAYER_BASE_HP + (level - 1) * BASE_HEALTH_GAIN_PER_LEVEL;
+      return renderUpgradeCard("fas fa-shield-alt", "Base Fortification", level, "Increases base structural integrity.", `${currentHealth} HP`, cost, () => {
+        sounds.playUpgrade(); setGameState(p => ({ ...p, coins: p.coins - cost, baseHealthLevel: p.baseHealthLevel + 1 }));
+      });
+    }
 
     if (unitId === 'starting_budget_upgrade') {
       const level = gameState.startingBudgetLevel;
@@ -1564,7 +1617,6 @@ export default function App() {
       </div>
     );
 
-    // Try finding in Player units first, then Enemy units
     let unit = PLAYER_UNITS.find(u => u.id === unitId);
     let isEnemy = false;
     
@@ -1576,7 +1628,6 @@ export default function App() {
     if (!unit) return null;
 
     const level = isEnemy ? 1 : (gameState.unitLevels[unitId] || 1);
-    // For enemies, show unlocked in Almanac
     const isUnlocked = isEnemy ? true : isUnitUnlocked(unit);
     const nextLvlCost = isEnemy ? 0 : getUpgradeCost(unit, level);
     const isAltPreferred = !isEnemy && (gameState.preferredForms[unitId] ?? true);
@@ -1664,10 +1715,10 @@ export default function App() {
   const renderScreen = () => {
     switch(gameState.screen) {
       case 'menu':
+        // ... (Menu remains same)
         return (
             <ScreenWrapper className="justify-center items-center">
                 <div className="relative z-10 flex flex-col items-center gap-12 w-full max-w-4xl px-6">
-                    {/* Header */}
                     <div className="text-center space-y-2 animate-in slide-in-from-top duration-700">
                         <div className="text-blue-500 font-black tracking-[0.5em] text-xs uppercase mb-2">Game Version {GAME_VERSION}</div>
                         <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter text-white drop-shadow-[0_0_25px_rgba(59,130,246,0.6)]">
@@ -1676,9 +1727,7 @@ export default function App() {
                         </h1>
                     </div>
 
-                    {/* Main Dashboard Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full animate-in slide-in-from-bottom duration-700 delay-100">
-                        {/* Featured: Campaign */}
                         <button 
                             onClick={() => setGameState(p => ({...p, screen: 'stages'}))}
                             className="md:col-span-3 group relative h-48 bg-gradient-to-r from-blue-900/40 to-slate-900/40 rounded-3xl border border-blue-500/30 hover:border-blue-400 transition-all overflow-hidden flex items-center justify-between p-8 shadow-2xl hover:shadow-blue-900/20"
@@ -1697,7 +1746,6 @@ export default function App() {
                             </div>
                         </button>
                         
-                        {/* GACHA BUTTON */}
                          <button onClick={() => setGameState(p => ({...p, screen: 'gacha'}))} className="md:col-span-3 h-24 bg-gradient-to-r from-purple-900/60 to-pink-900/60 rounded-2xl border border-pink-500/30 hover:border-pink-400 transition-all flex items-center justify-between px-8 group relative overflow-hidden">
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 animate-pulse-slow"></div>
                             <div className="flex flex-col items-start relative z-10">
@@ -1710,7 +1758,6 @@ export default function App() {
                             </div>
                         </button>
 
-                        {/* Secondary Actions */}
                         <button onClick={() => setGameState(p => ({...p, screen: 'shop'}))} className="h-32 bg-slate-900/60 rounded-2xl border border-white/10 hover:bg-slate-800 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-2 group">
                             <i className="fas fa-shopping-cart text-3xl text-slate-500 group-hover:text-white transition-colors"></i>
                             <span className="font-bold text-sm tracking-wide text-slate-300">UPGRADES</span>
@@ -1727,7 +1774,6 @@ export default function App() {
                         </button>
                     </div>
 
-                    {/* Sandbox Button */}
                     <button 
                         onClick={() => startBattle(1, true)}
                         className="text-xs font-bold text-yellow-600 hover:text-yellow-400 uppercase tracking-widest border-b border-transparent hover:border-yellow-500 transition-all pb-1 animate-in fade-in delay-300"
@@ -1738,12 +1784,12 @@ export default function App() {
             </ScreenWrapper>
         );
       case 'gacha':
+        // ... (Gacha screen remains same)
         return (
             <ScreenWrapper className="flex items-center justify-center">
                 <button onClick={exitToMenu} className="absolute top-6 left-6 w-12 h-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors text-slate-400 hover:text-white z-20"><i className="fas fa-arrow-left"></i></button>
                 
                 <div className="relative w-full max-w-2xl bg-slate-900/80 backdrop-blur-xl border border-pink-500/30 rounded-3xl p-10 flex flex-col items-center shadow-2xl overflow-hidden">
-                    {/* Background FX */}
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-pink-900/20 pointer-events-none"></div>
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl"></div>
                     
@@ -1894,7 +1940,8 @@ export default function App() {
                     units={gameState.units} 
                     playerBaseHp={gameState.playerBaseHp} 
                     enemyBaseHp={gameState.enemyBaseHp}
-                    maxBaseHp={500 + (gameState.currentStage - 1) * 1000}
+                    playerMaxHp={INITIAL_PLAYER_BASE_HP + (gameState.baseHealthLevel - 1) * BASE_HEALTH_GAIN_PER_LEVEL}
+                    enemyMaxHp={(gameState.currentStage >= 1 && gameState.currentStage <= 9) ? 1000 : (gameState.currentStage >= 11 && gameState.currentStage <= 19) ? 3500 : 500 + (gameState.currentStage - 1) * 1000}
                     unitLevels={gameState.unitLevels}
                     cannonEffect={cannonEffectActive}
                     currentStage={gameState.currentStage}
@@ -2052,7 +2099,7 @@ export default function App() {
 
                         {/* List Items */}
                         {(isShop ? 
-                            [{id: 'bank_upgrade', name: 'Efficiency Upgrade', icon: 'fas fa-chart-line', group: 'Infra'}, {id: 'starting_budget_upgrade', name: 'Starting Money', icon: 'fas fa-briefcase', group: 'Infra'}, {id: 'cannon_upgrade', name: 'Orbital Cannon', icon: 'fas fa-meteor', group: 'Infra'}, ...PLAYER_UNITS.map(u => ({...u, group: 'Units'}))] 
+                            [{id: 'bank_upgrade', name: 'Efficiency Upgrade', icon: 'fas fa-chart-line', group: 'Infra'}, {id: 'starting_budget_upgrade', name: 'Starting Money', icon: 'fas fa-briefcase', group: 'Infra'}, {id: 'base_health_upgrade', name: 'Base Health', icon: 'fas fa-shield-alt', group: 'Infra'}, {id: 'cannon_upgrade', name: 'Orbital Cannon', icon: 'fas fa-meteor', group: 'Infra'}, ...PLAYER_UNITS.map(u => ({...u, group: 'Units'}))] 
                             : (gameState.screen === 'almanac' ? (almanacType === 'ally' ? PLAYER_UNITS : ENEMY_UNITS) : PLAYER_UNITS).map(u => ({...u, group: 'Units'}))
                         ).map((item: any) => {
                             const isSelected = selectedUnitId === item.id;

@@ -43,6 +43,8 @@ export interface ActiveUnit {
   hasThrownCake?: boolean; // Specific for Cake Thrower
   stunnedUntil?: number; // Timestamp until which unit is stunned
   colaStacks?: number; // Specific for Cola Spray (Alt form) damage stacking
+  chargeWindupStart?: number; // Specific for Bulldozer Boss Charge
+  lastSecondaryAbilityTime?: number; // Specific for Bulldozer Boss Wall Gun
 }
 
 export interface GameState {
