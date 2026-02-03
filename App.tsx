@@ -941,8 +941,10 @@ export default function App() {
   // ... (Theme Music Controller remains same)
   useEffect(() => {
     if (gameState.screen === 'battle' && !gameState.isGameOver) {
-      if (gameState.currentStage === 10) {
+      if (BOSS_STAGE_IDS.includes(gameState.currentStage)) {
         sounds.startBattleTheme('boss');
+      } else if (gameState.currentStage >= 21 && gameState.currentStage <= 29) {
+        sounds.startBattleTheme('advanced');
       } else if (gameState.currentStage >= 11) {
         sounds.startBattleTheme('electronic');
       } else {

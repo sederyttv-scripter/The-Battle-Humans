@@ -103,8 +103,42 @@ export const evaluateStageSpawns = (ctx: StageContext): SpawnCommand | null => {
     return (enemyCooldowns[unitId] || 0) === 0 && enemyMoney >= cost;
   };
 
+  // STAGE 21: Iron Curtain
+  if (stageId === 21) {
+      if (timeElapsed < 15000) {
+         if (canSpawn('e_tactical_trooper')) {
+             return { unitId: 'e_tactical_trooper', cooldown: 3000 };
+         } else if (canSpawn('e_pistoler')) {
+             return { unitId: 'e_pistoler', cooldown: 6000 };
+         } else if (canSpawn('e_battler')) {
+             return { unitId: 'e_battler', cooldown: 2200 };
+         }
+      } else if (timeElapsed < 35000) {
+         if (canSpawn('e_enforcer')) {
+             return { unitId: 'e_enforcer', cooldown: 14000 };
+         } else if (canSpawn('e_fourth_puncher')) {
+             return { unitId: 'e_fourth_puncher', cooldown: 11000 };
+         } else if (canSpawn('e_tactical_trooper')) {
+             return { unitId: 'e_tactical_trooper', cooldown: 3500 };
+         } else if (canSpawn('e_cake_thrower')) {
+             return { unitId: 'e_cake_thrower', cooldown: 9000 };
+         }
+      } else {
+         if (canSpawn('e_heavy_gunner')) {
+             return { unitId: 'e_heavy_gunner', cooldown: 25000 };
+         } else if (canSpawn('e_sniper')) {
+             return { unitId: 'e_sniper', cooldown: 15000 };
+         } else if (canSpawn('e_enforcer')) {
+             return { unitId: 'e_enforcer', cooldown: 12000 };
+         } else if (canSpawn('e_tactical_trooper')) {
+             return { unitId: 'e_tactical_trooper', cooldown: 4000 };
+         } else if (canSpawn('e_battler')) {
+             return { unitId: 'e_battler', cooldown: 2500 };
+         }
+      }
+  }
   // STAGE 20: The Bulldozer
-  if (stageId === 20) {
+  else if (stageId === 20) {
       if (!bossSpawned && timeElapsed > 3000) {
          return { unitId: 'e_boss_bulldozer', cooldown: 0, setBossSpawned: true };
       } else if (bossSpawned) {

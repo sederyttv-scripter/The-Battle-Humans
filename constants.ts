@@ -67,6 +67,7 @@ export const STAGE_CONFIG = [
   { id: 18, name: "Suppression Fire", subtitle: "Bullet Rain", icon: "fas fa-crosshairs", color: "from-stone-900 to-neutral-900" },
   { id: 19, name: "Heavy Ordinance", subtitle: "Explosive Entry", icon: "fas fa-bomb", color: "from-slate-900 to-black" },
   { id: 20, name: "The Bulldozer", subtitle: "Demolition Crew", icon: "fas fa-snowplow", color: "from-yellow-900 to-black", isBoss: true },
+  { id: 21, name: "Iron Curtain", subtitle: "Break the Line", icon: "fas fa-shield-alt", color: "from-indigo-950 to-slate-900" },
 ];
 
 export const PLAYER_UNITS: UnitType[] = [
